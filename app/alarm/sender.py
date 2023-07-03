@@ -1,8 +1,8 @@
-import httpx
 import orjson
+import requests
 from celery import Task, shared_task
-from httpx._models import Response
 from redis import Redis
+from requests import Response
 
 from app.alarm.exceptions import RateLimitException
 from app.alarm.result_parser import DEFAULT_RETRY_AFTER, UNSUBSCRIBERS_KEY, AlarmResultParser
@@ -30,7 +30,7 @@ def send_alarm(self: Task, key: str, message: dict) -> None:
         headers = {"Content-Type": "application/json"}
         url = f"https://discord.com/api/webhooks/{key}"
 
-        response: Response = httpx.post(url=url, data=orjson.dumps(message), headers=headers)
+        response: Response = requests.post(url=url, data=orjson.dumps(message), headers=headers)
         AlarmResultParser(session=session).parse(key=key, result=response)
 
     except RateLimitException as exc:

@@ -5,6 +5,7 @@ black==23.3.0
 celery==5.3.1
 certifi==2023.5.7
 cfgv==3.3.1
+charset-normalizer==3.1.0
 click==8.1.3
 click-didyoumean==0.3.0
 click-plugins==1.1.1
@@ -17,7 +18,6 @@ gevent==22.10.2
 greenlet==2.0.2
 h11==0.14.0
 httpcore==0.17.2
-httpx==0.24.1
 identify==2.5.24
 idna==3.4
 iniconfig==2.0.0
@@ -38,10 +38,12 @@ python-dateutil==2.8.2
 python-dotenv==1.0.0
 PyYAML==6.0
 redis==4.6.0
+requests==2.31.0
 six==1.16.0
 sniffio==1.3.0
 typing_extensions==4.7.0
 tzdata==2023.3
+urllib3==2.0.3
 vine==5.0.0
 virtualenv==20.23.1
 wcwidth==0.2.6

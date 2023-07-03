@@ -1,5 +1,5 @@
-from httpx._models import Response
 from redis import Redis
+from requests import Response
 
 from app.alarm.exceptions import AlarmSendFailedException, RateLimitException
 
