@@ -1,4 +1,6 @@
+import asyncio
 import functools
+import inspect
 import traceback
 
 from app.common.logger import logger
@@ -9,12 +11,15 @@ class AppException(Exception):
         super().__init__()
 
 
-def exception_handler(func):
+def async_exception_handler(func):
     @functools.wraps(func)
-    def wrapper(*args, **kwargs):
+    async def wrapper(*args, **kwargs):
         try:
-            func(*args, **kwargs)
-        except KeyboardInterrupt:
+            if not inspect.iscoroutinefunction(func):
+                raise Exception("This function is not async.")
+            await func(*args, **kwargs)
+
+        except asyncio.exceptions.CancelledError:
             logger.info("Start the node server.")
             exit()
         except AppException as exc:

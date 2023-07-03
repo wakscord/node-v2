@@ -1,40 +1,36 @@
-import orjson
-import requests
-from celery import Task, shared_task
-from redis import Redis
-from requests import Response
+import asyncio
 
-from app.alarm.exceptions import RateLimitException
-from app.alarm.result_parser import DEFAULT_RETRY_AFTER, UNSUBSCRIBERS_KEY, AlarmResultParser
-from app.infra.redis import session
+import aiohttp
+import orjson
+from aiohttp import ClientResponse
+
+from app.alarm.repository import AlarmRedisRepository
+from app.alarm.response_parser import AlarmResponseParser
 
 
 class AlarmSender:
-    @classmethod
-    def send(cls, session: Redis, subscribers: list[str], message: dict) -> None:
-        # 구독 해제 유저들 제외
-        unsubscribers: set[str] = session.smembers(UNSUBSCRIBERS_KEY)
-        active_subscribers = cls._exclude_unsubscribers(subscribers=subscribers, unsubscribers=unsubscribers)
+    def __init__(self, repo: AlarmRedisRepository):
+        self._repo = repo
 
-        for subscriber in active_subscribers:
-            send_alarm.delay(key=subscriber, message=message)
+    async def send(self, subscribers: list[str], message: dict) -> None:
+        # 구독 해제 유저들 제외
+        unsubscribers: set[str] = await self._repo.get_unsubscribers()
+        active_subscribers = self._exclude_unsubscribers(subscribers, unsubscribers)
+
+        responses = await self._send(active_subscribers, message)
+
+        # TODO: 재시도 구현하기
+        await AlarmResponseParser(repo=self._repo).parse_all(responses)
 
     @staticmethod
-    def _exclude_unsubscribers(subscribers: list[str], unsubscribers: list[bytes]) -> set[str]:
-        return set(subscribers) - {unsubscriber.decode("utf-8") for unsubscriber in unsubscribers}
-
-
-@shared_task(bind=True)
-def send_alarm(self: Task, key: str, message: dict) -> None:
-    try:
+    async def _send(subscribers: set[str], message: dict) -> ClientResponse:
         headers = {"Content-Type": "application/json"}
-        url = f"https://discord.com/api/webhooks/{key}"
+        url_format = "https://discord.com/api/webhooks/{0}"
 
-        response: Response = requests.post(url=url, data=orjson.dumps(message), headers=headers)
-        AlarmResultParser(session=session).parse(key=key, result=response)
+        async with aiohttp.ClientSession(headers=headers) as session:
+            tasks = [session.post(url=url_format.format(key), data=orjson.dumps(message)) for key in subscribers]
+            return await asyncio.gather(*tasks)
 
-    except RateLimitException as exc:
-        raise self.retry(exc=exc, countdown=exc.retry_after, max_retries=10)
-
-    except Exception as exc:
-        raise self.retry(exc=str(exc), countdown=DEFAULT_RETRY_AFTER, max_retries=10)
+    @staticmethod
+    def _exclude_unsubscribers(subscribers: list[str], unsubscribers: set[str]) -> set[str]:
+        return set(subscribers) - unsubscribers

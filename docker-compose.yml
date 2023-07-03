@@ -5,18 +5,3 @@ services:
     image: wakscode-node
     build: .
     command: python app/main.py
-    networks:
-      - server
-
-  worker:
-    image: wakscode-worker
-    build: .
-    command: celery -A app.main.worker worker --loglevel=info --pool=gevent --concurrency=1000
-    depends_on:
-      - node
-    networks:
-      - server
-
-networks:
-  server:
-    driver: bridge

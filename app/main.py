@@ -1,31 +1,29 @@
-from celery import Celery
+import asyncio
 
+from app.alarm.repository import AlarmRedisRepository
 from app.alarm.sender import AlarmSender
 from app.alarm.task_parser import AlarmTaskParser
-from app.common.exceptions import exception_handler
+from app.common.exceptions import async_exception_handler
 from app.common.logger import logger
 from app.common.settings import settings
-from app.infra import celeryconfig
 from app.infra.redis import session
 
-worker = Celery()
-worker.config_from_object(celeryconfig)
+
+@async_exception_handler
+async def process_task(task: list[bytes]):
+    parser = AlarmTaskParser(task)
+    sender = AlarmSender(repo=AlarmRedisRepository(session))
+    await sender.send(parser.parse_subscribers(), parser.parse_message())
 
 
-@exception_handler
-def process_task(task: list[bytes]):
-    parser = AlarmTaskParser(raw_task=task)
-    AlarmSender.send(session=session, subscribers=parser.parse_subscribers(), message=parser.parse_message())
-
-
-@exception_handler
-def listen() -> None:
+@async_exception_handler
+async def listen() -> None:
     logger.info("Start the node server.")
     while True:
-        task = session.blpop(f"node-{settings.NODE_ID}")
+        task = await session.blpop(f"node-{settings.NODE_ID}")
         if task:
-            process_task(task=task)
+            await process_task(task)
 
 
 if __name__ == "__main__":
-    listen()
+    asyncio.run(listen())
