@@ -22,7 +22,7 @@ async def listen() -> None:
     while True:
         task = await session.blpop(f"node-{settings.NODE_ID}")
         if task:
-            await process_task(task)
+            asyncio.create_task(process_task(task))
 
 
 if __name__ == "__main__":
