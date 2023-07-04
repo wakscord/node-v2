@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Any
 
-from redis import Redis
+from redis.asyncio import Redis
 
 
 class AlarmRepository(ABC):

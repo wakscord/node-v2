@@ -1,6 +1,7 @@
 import os
 from dataclasses import dataclass
 from pathlib import Path
+from uuid import uuid4
 
 from dacite import from_dict
 from dotenv import dotenv_values
@@ -11,9 +12,13 @@ if not os.path.exists(env_path):
 
 _settings = dotenv_values(env_path)
 
+is_dev = _settings.get("ENV") == "dev"
+_settings["NODE_ID"] = "node_dev" if is_dev else f"node_{uuid4()}"
+
 
 @dataclass(frozen=True)
 class Settings:
+    ENV: str
     NODE_ID: str
     REDIS_URL: str
     REDIS_PASSWORD: str

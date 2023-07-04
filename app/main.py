@@ -7,6 +7,7 @@ from app.common.exceptions import async_exception_handler
 from app.common.logger import logger
 from app.common.settings import settings
 from app.infra.redis import session
+from app.node.repository import NodeRedisRepository
 
 
 @async_exception_handler
@@ -16,11 +17,18 @@ async def process_task(task: list[bytes]):
     await sender.send(parser.parse_subscribers(), parser.parse_message())
 
 
+async def join_server():
+    node_repo = NodeRedisRepository(session)
+    await node_repo.join()
+
+
 @async_exception_handler
 async def listen() -> None:
-    logger.info("Start the node server.")
+    logger.info(f"Start the node server. (node_id: {settings.NODE_ID})")
+    asyncio.create_task(join_server())
+
     while True:
-        task = await session.blpop(f"node-{settings.NODE_ID}")
+        task = await session.blpop(settings.NODE_ID)
         if task:
             asyncio.create_task(process_task(task))
 
