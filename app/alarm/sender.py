@@ -2,10 +2,13 @@ import asyncio
 
 import aiohttp
 import orjson
-from aiohttp import ClientResponse
+from aiohttp import ClientResponse, ClientSession
 
+from app.alarm.constants import DEFAULT_RETRY_AFTER, DISCORD_WEBHOOK_URL
+from app.alarm.exceptions import AlarmSendFailedException, RateLimitException
 from app.alarm.repository import AlarmRedisRepository
-from app.alarm.response_parser import AlarmResponseParser
+from app.alarm.response_validator import AlarmResponseValidator
+from app.common.logger import logger
 
 
 class AlarmSender:
@@ -13,23 +16,33 @@ class AlarmSender:
         self._repo = repo
 
     async def send(self, subscribers: list[str], message: dict) -> None:
-        # 구독 해제 유저들 제외
         unsubscribers: set[str] = await self._repo.get_unsubscribers()
         active_subscribers = self._exclude_unsubscribers(subscribers, unsubscribers)
+        await self._send(active_subscribers, message)
 
-        responses = await self._send(active_subscribers, message)
-
-        # TODO: 재시도 구현하기
-        await AlarmResponseParser(repo=self._repo).parse_all(responses)
-
-    @staticmethod
-    async def _send(subscribers: set[str], message: dict) -> ClientResponse:
+    async def _send(self, subscribers: set[str], message: dict) -> ClientResponse:
         headers = {"Content-Type": "application/json"}
-        url_format = "https://discord.com/api/webhooks/{0}"
+        data = orjson.dumps(message)
 
         async with aiohttp.ClientSession(headers=headers) as session:
-            tasks = [session.post(url=url_format.format(key), data=orjson.dumps(message)) for key in subscribers]
+            tasks = [self._request(session, url=f"{DISCORD_WEBHOOK_URL}{key}", data=data) for key in subscribers]
             return await asyncio.gather(*tasks)
+
+    async def _request(self, session: ClientSession, url: str, data: bytes, retry_attempt: int = 10) -> None:
+        retry_after = DEFAULT_RETRY_AFTER
+
+        for idx in range(retry_attempt):
+            try:
+                await asyncio.sleep(retry_after * idx)
+                response: ClientResponse = await session.post(url=url, data=data)
+                if await AlarmResponseValidator(self._repo).is_done(response):
+                    break
+
+            except RateLimitException as exc:
+                retry_after = exc.retry_after
+
+            except AlarmSendFailedException as exc:
+                logger.warning(exc)
 
     @staticmethod
     def _exclude_unsubscribers(subscribers: list[str], unsubscribers: set[str]) -> set[str]:
