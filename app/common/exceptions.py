@@ -22,11 +22,12 @@ def async_exception_handler(func):
             await func(*args, **kwargs)
 
         except asyncio.exceptions.CancelledError:
-            logger.info("Start the node server.")
-            exit()
+            logger.info("Stop the node server.")
+
         except AppException as exc:
             traceback.print_exception(exc)
-            logger.warning(str(exc))
+            logger.warning(exc)
+
         finally:
             await session.hdel("node_servers", settings.NODE_ID)
 
