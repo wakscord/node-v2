@@ -16,11 +16,11 @@ class NodeRepository(ABC):
 
     @abstractmethod
     async def join(self) -> None:
-        raise NotImplemented
+        raise NotImplementedError
 
     @abstractmethod
     async def _health_check(self) -> None:
-        raise NotImplemented
+        raise NotImplementedError
 
 
 class NodeRedisRepository(NodeRepository):

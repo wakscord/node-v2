@@ -13,11 +13,11 @@ class AlarmRepository(ABC):
 
     @abstractmethod
     async def get_unsubscribers(self) -> set[str]:
-        raise NotImplemented
+        raise NotImplementedError
 
     @abstractmethod
     async def add_unsubscriber(self, unsubscriber: str) -> None:
-        raise NotImplemented
+        raise NotImplementedError
 
 
 class AlarmRedisRepository(AlarmRepository):
