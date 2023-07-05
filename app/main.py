@@ -33,5 +33,18 @@ async def listen() -> None:
             asyncio.create_task(process_task(task))
 
 
+async def test_redis_ping() -> None:
+    try:
+        await session.ping()
+    except Exception as exc:
+        logger.warning(f"Redis connection error. (exception: {exc})")
+        exit(0)
+
+
+async def run() -> None:
+    await test_redis_ping()
+    await listen()
+
+
 if __name__ == "__main__":
-    asyncio.run(listen())
+    asyncio.run(run())
