@@ -41,7 +41,8 @@ class AlarmResponseValidator:
 
     @staticmethod
     def _parse_unsubscriber(url: str) -> str | None:
-        result = re.findall(pattern=f"{DISCORD_WEBHOOK_URL}(\S+)", string=url)
+        pattern = r"{0}(\S+)".format(DISCORD_WEBHOOK_URL)
+        result = re.findall(pattern=pattern, string=url)
         return result[0] if result else None
 
     @staticmethod
