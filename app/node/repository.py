@@ -35,5 +35,5 @@ class NodeRedisRepository(NodeRepository):
 
     async def _health_check(self) -> None:
         await self._session.setex(
-            f"health_check-{settings.NODE_ID}", timedelta(seconds=NODE_HEALTH_CHECK_INTERVAL), value=1
+            f"health_check:{settings.NODE_ID}", timedelta(seconds=NODE_HEALTH_CHECK_INTERVAL), value=1
         )
