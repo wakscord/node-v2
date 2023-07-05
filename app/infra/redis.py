@@ -6,10 +6,10 @@ from app.common.logger import logger
 from app.common.settings import settings
 
 pool = ConnectionPool(host=settings.REDIS_URL, port=6379, password=settings.REDIS_PASSWORD)
-session = Redis(connection_pool=pool)
+session: Redis = Redis(connection_pool=pool)
 
 
-async def _test_ping():
+async def _test_ping() -> None:
     await session.ping()
 
 

@@ -9,17 +9,17 @@ from app.infra.redis import session
 
 
 class AppException(Exception):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
 
 
-def async_exception_handler(func):
+def async_exception_handler(func):  # type: ignore
     @functools.wraps(func)
-    async def wrapper(*args, **kwargs):
+    async def wrapper(*args, **kwargs):  # type: ignore
         try:
             if not inspect.iscoroutinefunction(func):
                 raise Exception("This function is not async.")
-            await func(*args, **kwargs)
+            return await func(*args, **kwargs)
 
         except asyncio.exceptions.CancelledError:
             logger.info("Stop the node server.")

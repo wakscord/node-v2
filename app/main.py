@@ -11,13 +11,13 @@ from app.node.repository import NodeRedisRepository
 
 
 @async_exception_handler
-async def process_task(task: list[bytes]):
+async def process_task(task: list[bytes]) -> None:
     parser = AlarmTaskParser(task)
     sender = AlarmSender(repo=AlarmRedisRepository(session))
     await sender.send(parser.parse_subscribers(), parser.parse_message())
 
 
-async def join_server():
+async def join_server() -> None:
     node_repo = NodeRedisRepository(session)
     await node_repo.join()
 
