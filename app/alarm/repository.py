@@ -25,8 +25,7 @@ class AlarmRedisRepository(AlarmRepository):
         self._session = session
 
     async def get_unsubscribers(self) -> set[str]:
-        unsubscribers = await self._session.smembers(self.UNSUBSCRIBERS_KEY)
-        return {unsubscriber.decode("utf-8") for unsubscriber in unsubscribers}
+        return await self._session.smembers(self.UNSUBSCRIBERS_KEY)
 
     async def add_unsubscriber(self, unsubscriber: str) -> None:
         await self._session.sadd(self.UNSUBSCRIBERS_KEY, unsubscriber)
