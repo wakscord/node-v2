@@ -21,6 +21,7 @@ class Settings:
     ENV: str
     NODE_ID: str
     REDIS_URL: str
+    REDIS_PORT: str
     REDIS_PASSWORD: str
     PROXY_USER: str
     PROXY_PASSWORD: str

@@ -9,7 +9,11 @@ from app.node.manager import NodeManager
 
 class AppContainer(containers.DeclarativeContainer):
     redis_connection_pool = providers.Resource(
-        ConnectionPool, host=settings.REDIS_URL, port=6379, password=settings.REDIS_PASSWORD, decode_responses=True
+        ConnectionPool,
+        host=settings.REDIS_URL,
+        port=settings.REDIS_PORT,
+        password=settings.REDIS_PASSWORD,
+        decode_responses=True,
     )
     redis_session = providers.Resource(Redis, connection_pool=redis_connection_pool)
 
