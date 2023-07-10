@@ -1,30 +1,46 @@
 import os
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Callable
 from uuid import uuid4
 
-from dacite import from_dict
 from dotenv import dotenv_values
 
 env_path = Path.joinpath(Path(__file__).parent.parent.parent.resolve(), ".env")
 if not os.path.exists(env_path):
     raise Exception("Dotenv is not exists.")
 
-_settings = dotenv_values(env_path)
-
-is_dev = _settings.get("ENV") == "dev"
-_settings["NODE_ID"] = "node_dev" if is_dev else f"node_{uuid4()}"
-
 
 @dataclass(frozen=True)
 class Settings:
     ENV: str
     NODE_ID: str
+    MAX_CONCURRENT: int
+
     REDIS_URL: str
-    REDIS_PORT: str
-    REDIS_PASSWORD: str
-    PROXY_USER: str
-    PROXY_PASSWORD: str
+    REDIS_PORT: int = 6379
+    REDIS_PASSWORD: str | None = None
+
+    PROXY_USER: str | None = None
+    PROXY_PASSWORD: str | None = None
 
 
-settings = from_dict(data_class=Settings, data=_settings)
+raw_settings = dotenv_values(env_path)
+node_id = f"node_{uuid4()}"
+
+is_dev = raw_settings.get("ENV") == "dev"
+if is_dev:
+    node_id = "node_dev"
+
+to_int: Callable[[str, int], int] = lambda value, else_value: int(value) if value else else_value
+
+settings = Settings(
+    ENV=raw_settings.get("ENV") or "local",
+    NODE_ID=node_id,
+    MAX_CONCURRENT=to_int(raw_settings.get("MAX_CONCURRENT"), 3000),
+    REDIS_URL=raw_settings.get("REDIS_URL") or "localhost",
+    REDIS_PORT=to_int(raw_settings.get("REDIS_PORT"), 6379),
+    REDIS_PASSWORD=raw_settings.get("REDIS_PASSWORD"),
+    PROXY_USER=raw_settings.get("PROXY_USER"),
+    PROXY_PASSWORD=raw_settings.get("PROXY_PASSWORD"),
+)

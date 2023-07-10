@@ -1,4 +1,6 @@
 import asyncio
+import math
+from typing import Callable
 
 import aiohttp
 import orjson
@@ -21,13 +23,17 @@ class AlarmSender:
         active_subscribers = self._exclude_unsubscribers(subscribers, unsubscribers)
         await self._send(active_subscribers, message)
 
-    async def _send(self, subscribers: set[str], message: dict) -> ClientResponse:
+    async def _send(self, subscribers: set[str], message: dict) -> None:
         headers = {"Content-Type": "application/json"}
         data = orjson.dumps(message)
 
-        async with aiohttp.ClientSession(headers=headers) as session:
-            tasks = [self._request(session, url=f"{DISCORD_WEBHOOK_URL}{key}", data=data) for key in subscribers]
-            return await asyncio.gather(*tasks)
+        chunked_subscribers_list = self._chunk_subscribers(list(subscribers), settings.MAX_CONCURRENT)
+        for chunked_subscribers in chunked_subscribers_list:
+            async with aiohttp.ClientSession(headers=headers) as session:
+                tasks = [
+                    self._request(session, url=f"{DISCORD_WEBHOOK_URL}{key}", data=data) for key in chunked_subscribers
+                ]
+                await asyncio.gather(*tasks)
 
     async def _request(self, session: ClientSession, url: str, data: bytes, retry_attempt: int = 10) -> None:
         retry_after = DEFAULT_RETRY_AFTER
@@ -50,3 +56,10 @@ class AlarmSender:
     @staticmethod
     def _exclude_unsubscribers(subscribers: list[str], unsubscribers: set[str]) -> set[str]:
         return set(subscribers) - unsubscribers
+
+    @staticmethod
+    def _chunk_subscribers(subscribers: list[str], max_concurrent: int) -> list[list[str]]:
+        chunk_len: int = math.ceil(len(subscribers) / max_concurrent)
+        start_idx: Callable[[int], int] = lambda current_idx: current_idx * max_concurrent
+        # fmt: off
+        return [subscribers[start_idx(idx): start_idx(idx) + max_concurrent] for idx in range(0, chunk_len)]
