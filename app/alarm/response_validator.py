@@ -22,7 +22,8 @@ class AlarmResponseValidator:
             return True
 
         elif self._is_rate_limit(response.status):
-            raise await self._parse_retry_after_exception(response)
+            exc: RateLimitException = await self._parse_retry_after_exception(response)
+            raise exc
 
         message = f"status_code: {response.status}, body: {await response.text()}"
         raise AlarmSendFailedException(message)

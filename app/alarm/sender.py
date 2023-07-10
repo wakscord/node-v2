@@ -9,6 +9,7 @@ from app.alarm.exceptions import AlarmSendFailedException, RateLimitException
 from app.alarm.repository import AlarmRedisRepository
 from app.alarm.response_validator import AlarmResponseValidator
 from app.common.logger import logger
+from app.common.settings import settings
 
 
 class AlarmSender:
@@ -30,11 +31,13 @@ class AlarmSender:
 
     async def _request(self, session: ClientSession, url: str, data: bytes, retry_attempt: int = 10) -> None:
         retry_after = DEFAULT_RETRY_AFTER
+        proxy = await self._repo.get_least_usage_proxy()
+        proxy_auth = aiohttp.BasicAuth(settings.PROXY_USER, settings.PROXY_PASSWORD) if proxy else None
 
         for idx in range(retry_attempt):
             try:
                 await asyncio.sleep(retry_after * idx)
-                response: ClientResponse = await session.post(url=url, data=data)
+                response: ClientResponse = await session.post(url=url, data=data, proxy=proxy, proxy_auth=proxy_auth)
                 if await AlarmResponseValidator(self._repo).is_done(response):
                     break
 
