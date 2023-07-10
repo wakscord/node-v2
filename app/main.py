@@ -1,50 +1,40 @@
 import asyncio
 
-from app.alarm.repository import AlarmRedisRepository
+from dependency_injector.wiring import Provide, inject
+from redis.asyncio import Redis
+
 from app.alarm.sender import AlarmSender
 from app.alarm.task_parser import AlarmTaskParser
+from app.common.di import AppContainer
 from app.common.exceptions import async_exception_handler
-from app.common.logger import logger
 from app.common.settings import settings
-from app.infra.redis import session
-from app.node.repository import NodeRedisRepository
+from app.node.manager import NodeManager
 
 
-@async_exception_handler
-async def process_task(task: list[bytes]) -> None:
+@inject
+async def process_task(task: list[bytes], alarm_sender: AlarmSender = Provide[AppContainer.alarm_sender]) -> None:
     parser = AlarmTaskParser(task)
-    sender = AlarmSender(repo=AlarmRedisRepository(session))
-    await sender.send(parser.parse_subscribers(), parser.parse_message())
-
-
-async def join_server() -> None:
-    node_repo = NodeRedisRepository(session)
-    await node_repo.join()
+    await alarm_sender.send(parser.parse_subscribers(), parser.parse_message())
 
 
 @async_exception_handler
-async def listen() -> None:
-    logger.info(f"Start the node server. (node_id: {settings.NODE_ID})")
-    asyncio.create_task(join_server())
-
+async def listen(session: Redis = Provide[AppContainer.redis_session]) -> None:
     while True:
         task = await session.blpop(settings.NODE_ID)
         if task:
             asyncio.create_task(process_task(task))
 
 
-async def test_redis_ping() -> None:
-    try:
-        await session.ping()
-    except Exception as exc:
-        logger.warning(f"Redis connection error. (exception: {exc})")
-        exit(0)
-
-
-async def run() -> None:
-    await test_redis_ping()
+@inject
+async def run(
+    node_manager: NodeManager = Provide[AppContainer.node_manager],
+) -> None:
+    await node_manager.join_server()
     await listen()
 
 
 if __name__ == "__main__":
+    container = AppContainer()
+    container.wire(modules=[__name__])
+
     asyncio.run(run())
