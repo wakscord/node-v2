@@ -21,7 +21,7 @@ class AlarmRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def get_least_usage_proxy(self) -> set[str]:
+    async def get_least_usage_proxy(self) -> str | None:
         raise NotImplementedError
 
 

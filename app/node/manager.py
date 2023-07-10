@@ -1,7 +1,7 @@
 import asyncio
 from datetime import timedelta
 
-from redis import Redis
+from redis.asyncio import Redis
 
 from app.common.logger import logger
 from app.node.constants import NODE_HEALTH_CHECK_INTERVAL
@@ -18,7 +18,7 @@ class NodeManager:
         logger.info(f"Start the node server. (node_id: {self._node_id})")
         asyncio.create_task(self._join())
 
-    async def _ping_session(self):
+    async def _ping_session(self) -> None:
         try:
             await self._session.ping()
         except Exception as exc:
