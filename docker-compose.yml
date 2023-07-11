@@ -5,3 +5,4 @@ services:
     image: wakscode-node
     build: .
     command: python app/main.py
+    restart: always
