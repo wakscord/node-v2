@@ -1,5 +1,6 @@
 import re
 
+import yarl
 from aiohttp import ClientResponse
 
 from app.alarm.constants import DEFAULT_RETRY_AFTER, DISCORD_WEBHOOK_URL
@@ -41,9 +42,9 @@ class AlarmResponseValidator:
         return status_code == 429
 
     @staticmethod
-    def _parse_unsubscriber(url: str) -> str | None:
+    def _parse_unsubscriber(url: yarl.URL) -> str | None:
         pattern = r"{0}(\S+)".format(DISCORD_WEBHOOK_URL)
-        result = re.findall(pattern=pattern, string=url)
+        result = re.findall(pattern=pattern, string=str(url))
         return result[0] if result else None
 
     @staticmethod
