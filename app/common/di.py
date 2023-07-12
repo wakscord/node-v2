@@ -1,5 +1,5 @@
 from dependency_injector import containers, providers
-from redis.asyncio import ConnectionPool, Redis
+from redis.asyncio import BlockingConnectionPool, Redis
 
 from app.alarm.repository import AlarmRedisRepository
 from app.alarm.sender import AlarmSender
@@ -9,11 +9,13 @@ from app.node.manager import NodeManager
 
 class AppContainer(containers.DeclarativeContainer):
     redis_connection_pool = providers.Resource(
-        ConnectionPool,
+        BlockingConnectionPool,
         host=settings.REDIS_URL,
         port=settings.REDIS_PORT,
         password=settings.REDIS_PASSWORD,
         decode_responses=True,
+        max_connections=30,
+        timeout=None,
     )
     redis_session = providers.Resource(Redis, connection_pool=redis_connection_pool)
 
