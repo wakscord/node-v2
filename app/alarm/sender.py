@@ -1,5 +1,6 @@
 import asyncio
 import math
+import traceback
 from typing import Callable
 
 import aiohttp
@@ -43,7 +44,14 @@ class AlarmSender:
         for idx in range(retry_attempt):
             try:
                 await asyncio.sleep(retry_after * idx)
-                response: ClientResponse = await session.post(url=url, data=data, proxy=proxy, proxy_auth=proxy_auth)
+                try:
+                    response: ClientResponse = await session.post(
+                        url=url, data=data, proxy=proxy, proxy_auth=proxy_auth
+                    )
+                except Exception as e:
+                    traceback.print_exc()
+                    raise AlarmSendFailedException(f"Failed to send, error: {e}")
+
                 if await AlarmResponseValidator(self._repo).is_done(response):
                     break
 
