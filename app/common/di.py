@@ -8,7 +8,7 @@ from app.node.manager import NodeManager
 
 
 class AppContainer(containers.DeclarativeContainer):
-    redis_connection_pool = providers.Resource(
+    redis_connection_pool = providers.Factory(
         BlockingConnectionPool,
         host=settings.REDIS_URL,
         port=settings.REDIS_PORT,
@@ -17,7 +17,7 @@ class AppContainer(containers.DeclarativeContainer):
         max_connections=30,
         timeout=None,
     )
-    redis_session = providers.Resource(Redis, connection_pool=redis_connection_pool)
+    redis_session = providers.Factory(Redis, connection_pool=redis_connection_pool)
 
     alarm_repository = providers.Singleton(AlarmRedisRepository, session=redis_session)
     alarm_sender = providers.Singleton(AlarmSender, repo=alarm_repository)
