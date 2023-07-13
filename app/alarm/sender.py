@@ -5,7 +5,7 @@ from typing import Callable
 
 import aiohttp
 import orjson
-from aiohttp import ClientResponse, ClientSession
+from aiohttp import BasicAuth, ClientResponse, ClientSession
 
 from app.alarm.constants import DEFAULT_RETRY_AFTER, DISCORD_WEBHOOK_URL
 from app.alarm.exceptions import AlarmSendFailedException, RateLimitException
@@ -39,27 +39,23 @@ class AlarmSender:
     async def _request(self, session: ClientSession, url: str, data: bytes, retry_attempt: int = 10) -> None:
         retry_after = DEFAULT_RETRY_AFTER
         proxy = await self._repo.get_least_usage_proxy()
-        proxy_auth = aiohttp.BasicAuth(settings.PROXY_USER, settings.PROXY_PASSWORD) if proxy else None
+        proxy_auth = BasicAuth(settings.PROXY_USER, settings.PROXY_PASSWORD) if proxy else None
 
         for idx in range(retry_attempt):
             try:
                 await asyncio.sleep(retry_after * idx)
-                try:
-                    response: ClientResponse = await session.post(
-                        url=url, data=data, proxy=proxy, proxy_auth=proxy_auth
-                    )
-                except Exception as e:
-                    traceback.print_exc()
-                    raise AlarmSendFailedException(f"Failed to send, error: {e}")
-
+                response: ClientResponse = await session.post(url=url, data=data, proxy=proxy, proxy_auth=proxy_auth)
                 if await AlarmResponseValidator(self._repo).is_done(response):
                     break
-
             except RateLimitException as exc:
                 retry_after = exc.retry_after
-
             except AlarmSendFailedException as exc:
                 logger.warning(exc)
+            except aiohttp.ClientConnectorSSLError as exc:
+                logger.warning(f"SSL 에러가 발생했습니다, ({exc})")
+            except Exception as exc:
+                traceback.print_exc()
+                logger.warning(f"전송에 실패했습니다, ({exc})")
 
     @staticmethod
     def _exclude_unsubscribers(subscribers: list[str], unsubscribers: set[str]) -> set[str]:
