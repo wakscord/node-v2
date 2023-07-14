@@ -51,11 +51,11 @@ class AlarmSender:
                 retry_after = exc.retry_after
             except AlarmSendFailedException as exc:
                 logger.warning(exc)
-            except aiohttp.ClientConnectorSSLError as exc:
-                logger.warning(f"SSL 에러가 발생했습니다, ({exc})")
+            except aiohttp.ClientConnectionError as exc:
+                logger.warning(f"클라이언트 커넥션 에러가 발생했습니다, (exception: {exc})")
             except Exception as exc:
                 traceback.print_exc()
-                logger.warning(f"전송에 실패했습니다, ({exc})")
+                logger.warning(f"전송에 실패했습니다, (exception: {exc})")
 
     @staticmethod
     def _exclude_unsubscribers(subscribers: list[str], unsubscribers: set[str]) -> set[str]:
