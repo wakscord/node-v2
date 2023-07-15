@@ -22,7 +22,7 @@ async def listen(session: Redis = Provide[AppContainer.redis_session]) -> None:
     while True:
         task = await session.blpop(settings.NODE_ID)
         if task:
-            asyncio.create_task(process_task(task))
+            await process_task(task)
 
 
 @inject
