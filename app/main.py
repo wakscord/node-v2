@@ -9,6 +9,7 @@ from app.common.di import AppContainer
 from app.common.exceptions import async_exception_handler
 from app.common.settings import settings
 from app.node.manager import NodeManager
+from app.retry.manager import RetryManager
 
 
 @inject
@@ -28,8 +29,10 @@ async def listen(session: Redis = Provide[AppContainer.redis_session]) -> None:
 @inject
 async def run(
     node_manager: NodeManager = Provide[AppContainer.node_manager],
+    retry_manager: RetryManager = Provide[AppContainer.retry_manager],
 ) -> None:
     await node_manager.join_server()
+    await retry_manager.run()
     await listen()
 
 
