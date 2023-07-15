@@ -26,8 +26,5 @@ class AlarmSendFailedException(AppException):
 
 
 class RateLimitException(AppException):
-    def __init__(self, retry_after: int) -> None:
-        self.retry_after = retry_after
-
     def __str__(self) -> str:
-        return f"너무 많은 요청을 보내서 요청이 실패했습니다, (retry_after: {self.retry_after})"
+        return f"너무 많은 요청을 보내서 요청이 실패했습니다."
