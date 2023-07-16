@@ -16,6 +16,8 @@ class CacheContainer(containers.DeclarativeContainer):
         password=settings.REDIS_PASSWORD,
         decode_responses=True,
         max_connections=30,
+        socket_keepalive=True,
+        socket_timeout=300,
         timeout=None,
     )
     redis_session = providers.Factory(Redis, connection_pool=redis_connection_pool)
