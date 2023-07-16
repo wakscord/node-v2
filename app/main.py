@@ -18,7 +18,7 @@ async def process_task(task: list[bytes], alarm_sender: AlarmSender = Provide[Ap
 
 
 @async_exception_handler
-async def listen(session: Redis = Provide[AppContainer.redis_session]) -> None:
+async def listen(session: Redis = Provide[AppContainer.cache_session]) -> None:
     while True:
         task = await session.blpop(settings.NODE_ID)
         if task:
@@ -26,9 +26,7 @@ async def listen(session: Redis = Provide[AppContainer.redis_session]) -> None:
 
 
 @inject
-async def run(
-    node_manager: NodeManager = Provide[AppContainer.node_manager],
-) -> None:
+async def run(node_manager: NodeManager = Provide[AppContainer.node_manager]) -> None:
     await node_manager.join_server()
     await listen()
 

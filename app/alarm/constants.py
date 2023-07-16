@@ -1,2 +1,3 @@
 DEFAULT_RETRY_AFTER = 3
+DEFAULT_RETRY_ATTEMPT = 10
 DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/"
