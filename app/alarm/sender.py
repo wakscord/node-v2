@@ -13,13 +13,15 @@ from app.alarm.repository import AlarmRedisRepository
 from app.alarm.response_validator import AlarmResponseValidator
 from app.common.logger import logger
 from app.common.settings import settings
+from app.retry.manager import RetryManager
 
 
 class AlarmSender:
     _headers = {"Content-Type": "application/json"}
 
-    def __init__(self, repo: AlarmRedisRepository):
+    def __init__(self, repo: AlarmRedisRepository, retry_manager: RetryManager):
         self._repo = repo
+        self._retry_manager = retry_manager
 
     async def send(self, subscribers: list[str], message: dict) -> None:
         unsubscribers: set[str] = await self._repo.get_unsubscribers()
@@ -37,8 +39,10 @@ class AlarmSender:
                 result = await asyncio.gather(*tasks)
 
             failed_subscribers = [subscriber for subscriber in result if subscriber]
-            for subscriber in failed_subscribers:
-                asyncio.create_task(self._retry(url=subscriber, data=data))
+            if failed_subscribers:
+                queue = [self._retry(url=subscriber, data=data) for subscriber in failed_subscribers]
+                print(len(queue))
+                await self._retry_manager.add(queue)
 
     async def _request(self, session: ClientSession, url: str, data: bytes) -> str | None:
         proxy = await self._repo.get_least_usage_proxy()
