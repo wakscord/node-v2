@@ -5,7 +5,7 @@ from app.alarm.repository import AlarmRedisRepository
 from app.alarm.sender import AlarmSender
 from app.common.settings import settings
 from app.node.manager import NodeManager
-from app.retry.manager import RetryManager
+from app.retry.rate_limiter import RetryRateLimiter
 
 
 class CacheContainer(containers.DeclarativeContainer):
@@ -24,7 +24,7 @@ class CacheContainer(containers.DeclarativeContainer):
 class AppContainer(containers.DeclarativeContainer):
     cache_session = CacheContainer.redis_session
 
-    retry_manager = providers.Singleton(RetryManager)
+    retry_rate_limiter = providers.Singleton(RetryRateLimiter)
     alarm_repository = providers.Singleton(AlarmRedisRepository, session=cache_session)
-    alarm_sender = providers.Singleton(AlarmSender, repo=alarm_repository, retry_manager=retry_manager)
+    alarm_sender = providers.Singleton(AlarmSender, repo=alarm_repository, retry_rate_limiter=retry_rate_limiter)
     node_manager = providers.Singleton(NodeManager, node_id=settings.NODE_ID, session=cache_session)

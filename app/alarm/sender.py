@@ -13,15 +13,15 @@ from app.alarm.repository import AlarmRedisRepository
 from app.alarm.response_validator import AlarmResponseValidator
 from app.common.logger import logger
 from app.common.settings import settings
-from app.retry.manager import RetryManager
+from app.retry.rate_limiter import RetryRateLimiter
 
 
 class AlarmSender:
     _headers = {"Content-Type": "application/json"}
 
-    def __init__(self, repo: AlarmRedisRepository, retry_manager: RetryManager):
+    def __init__(self, repo: AlarmRedisRepository, retry_rate_limiter: RetryRateLimiter):
         self._repo = repo
-        self._retry_manager = retry_manager
+        self.retry_rate_limiter = retry_rate_limiter
 
     async def send(self, subscribers: list[str], message: dict) -> None:
         unsubscribers: set[str] = await self._repo.get_unsubscribers()
@@ -33,16 +33,15 @@ class AlarmSender:
         chunked_subscribers_list = self._chunk_subscribers(list(subscribers), settings.MAX_CONCURRENT)
         for chunked_subscribers in chunked_subscribers_list:
             async with aiohttp.ClientSession(headers=self._headers) as session:
-                tasks = [
+                alarms = [
                     self._request(session, url=f"{DISCORD_WEBHOOK_URL}{key}", data=data) for key in chunked_subscribers
                 ]
-                result = await asyncio.gather(*tasks)
+                result = await asyncio.gather(*alarms)
 
-            failed_subscribers = [subscriber for subscriber in result if subscriber]
-            if failed_subscribers:
-                queue = [self._retry(url=subscriber, data=data) for subscriber in failed_subscribers]
-                print(len(queue))
-                await self._retry_manager.add(queue)
+            failed_alarms = [alarm for alarm in result if alarm]
+            if failed_alarms:
+                retry_alarms = [self._retry(url=subscriber, data=data) for subscriber in failed_alarms]
+                self.retry_rate_limiter.add_alarms(retry_alarms)
 
     async def _request(self, session: ClientSession, url: str, data: bytes) -> str | None:
         proxy = await self._repo.get_least_usage_proxy()
