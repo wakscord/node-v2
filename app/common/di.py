@@ -8,7 +8,7 @@ from app.node.manager import NodeManager
 from app.retry.manager import RetryManager
 
 
-class AppContainer(containers.DeclarativeContainer):
+class CacheContainer(containers.DeclarativeContainer):
     redis_connection_pool = providers.Factory(
         BlockingConnectionPool,
         host=settings.REDIS_URL,
@@ -20,9 +20,11 @@ class AppContainer(containers.DeclarativeContainer):
     )
     redis_session = providers.Factory(Redis, connection_pool=redis_connection_pool)
 
+
+class AppContainer(containers.DeclarativeContainer):
+    cache_session = CacheContainer.redis_session
+
     retry_manager = providers.Singleton(RetryManager)
-
-    alarm_repository = providers.Singleton(AlarmRedisRepository, session=redis_session)
+    alarm_repository = providers.Singleton(AlarmRedisRepository, session=cache_session)
     alarm_sender = providers.Singleton(AlarmSender, repo=alarm_repository, retry_manager=retry_manager)
-
-    node_manager = providers.Singleton(NodeManager, node_id=settings.NODE_ID, session=redis_session)
+    node_manager = providers.Singleton(NodeManager, node_id=settings.NODE_ID, session=cache_session)

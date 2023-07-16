@@ -19,7 +19,7 @@ async def process_task(task: list[bytes], alarm_sender: AlarmSender = Provide[Ap
 
 
 @async_exception_handler
-async def listen(session: Redis = Provide[AppContainer.redis_session]) -> None:
+async def listen(session: Redis = Provide[AppContainer.cache_session]) -> None:
     while True:
         task = await session.blpop(settings.NODE_ID)
         if task:
