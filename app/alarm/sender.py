@@ -56,8 +56,7 @@ class AlarmSender:
         except aiohttp.ClientConnectionError as exc:
             logger.warning(f"클라이언트 커넥션 에러가 발생했습니다, (exception: {exc})")
         except Exception as exc:
-            traceback.print_exc()
-            logger.warning(f"전송에 실패했습니다, (exception: {exc})")
+            logger.warning(f"전송에 실패했습니다, (exception: {exc}\n{traceback.format_exc()})")
         return url
 
     async def _retry(self, url: str, data: bytes) -> str | None:
