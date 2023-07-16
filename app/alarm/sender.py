@@ -58,7 +58,7 @@ class AlarmSender:
             logger.warning(f"전송에 실패했습니다, (exception: {exc}\n{traceback.format_exc()})")
         return url
 
-    async def _retry(self, url: str, data: bytes) -> str | None:
+    async def _retry(self, url: str, data: bytes) -> None:
         remain_retry_attempt = DEFAULT_RETRY_ATTEMPT
         async with aiohttp.ClientSession(headers=self._headers) as session:
             while True:

@@ -7,7 +7,7 @@ from app.retry.constants import RETRY_CHUNK_SIZE, RETRY_TASK_CHECK_INTERVAL
 
 
 class RetryRateLimiter:
-    def __init__(self):
+    def __init__(self) -> None:
         self._queue: list[Coroutine] = []
         asyncio.create_task(self._loop_pop_queue())
 
