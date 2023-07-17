@@ -23,7 +23,6 @@ def async_exception_handler(func):  # type: ignore
             logger.info("Stop the node server.")
 
         except AppException as exc:
-            traceback.print_exception(exc)
-            logger.warning(exc)
+            logger.warning(f"App exception: {exc}, {traceback.format_exc()}")
 
     return wrapper
