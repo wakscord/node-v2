@@ -14,11 +14,11 @@ class AlarmTask:
 
 
 class AlarmTaskParser:
-    def __init__(self, raw_task: list[bytes]) -> None:
+    def __init__(self, raw_task: tuple[str, str]) -> None:
         self._alarm_task = self._parse_raw_task(raw_task)
 
     @staticmethod
-    def _parse_raw_task(raw_task: list[bytes]) -> AlarmTask:
+    def _parse_raw_task(raw_task: tuple[str, str]) -> AlarmTask:
         try:
             loaded_task = orjson.loads(raw_task[1])
             return from_dict(data_class=AlarmTask, data=loaded_task)
