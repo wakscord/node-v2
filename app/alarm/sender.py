@@ -8,6 +8,7 @@ import orjson
 from aiohttp import BasicAuth, ClientResponse, ClientSession
 
 from app.alarm.constants import DEFAULT_RETRY_AFTER, DEFAULT_RETRY_ATTEMPT, DISCORD_WEBHOOK_URL
+from app.alarm.dtos import SendResponseDTO
 from app.alarm.exceptions import AlarmSendFailedException, RateLimitException
 from app.alarm.repository import AlarmRedisRepository
 from app.alarm.response_validator import AlarmResponseValidator
@@ -48,7 +49,8 @@ class AlarmSender:
         proxy_auth = BasicAuth(settings.PROXY_USER, settings.PROXY_PASSWORD) if proxy else None
         try:
             response: ClientResponse = await session.post(url=url, data=data, proxy=proxy, proxy_auth=proxy_auth)
-            await AlarmResponseValidator(self._repo).is_done(response)
+            response_dto = SendResponseDTO(url=response.url, status=response.status, text=response.text)
+            await AlarmResponseValidator(self._repo).is_done(response_dto)
             return None
         except (RateLimitException, AlarmSendFailedException) as exc:
             logger.warning(exc)
