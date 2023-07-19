@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from typing import Any
 
 from redis.asyncio import Redis
 
@@ -7,10 +6,6 @@ from redis.asyncio import Redis
 class AlarmRepository(ABC):
     _PROXIES_KEY = "proxies"
     _UNSUBSCRIBERS_KEY = "unsubscribers"
-
-    @abstractmethod
-    def __init__(self, session: Any):
-        self._session = session
 
     @abstractmethod
     async def get_unsubscribers(self) -> set[str]:

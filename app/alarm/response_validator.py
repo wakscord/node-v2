@@ -1,9 +1,9 @@
 import re
 
 import yarl
-from aiohttp import ClientResponse
 
 from app.alarm.constants import DISCORD_WEBHOOK_URL
+from app.alarm.dtos import SendResponseDTO
 from app.alarm.exceptions import AlarmSendFailedException, RateLimitException
 from app.alarm.repository import AlarmRepository
 
@@ -12,7 +12,7 @@ class AlarmResponseValidator:
     def __init__(self, repo: AlarmRepository):
         self._repo = repo
 
-    async def is_done(self, response: ClientResponse) -> bool:
+    async def is_done(self, response: SendResponseDTO) -> bool:
         if self._is_success(response.status):
             return True
 
