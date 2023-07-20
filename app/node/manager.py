@@ -5,11 +5,12 @@ from datetime import timedelta
 from redis.asyncio import Redis
 
 from app.common.logger import logger
-from app.common.settings import settings
 from app.node.constants import NODE_HEALTH_CHECK_INTERVAL, TASK_POP_INTERVAL
 
 
 class NodeManager:
+    _NODE_TASK_QUEUE = "node_task_queue"
+
     def __init__(self, node_id: str, session: Redis):
         self._node_id = node_id
         self._session = session
@@ -22,7 +23,7 @@ class NodeManager:
 
     async def pop_task(self) -> tuple[str, str] | None:
         try:
-            return await self._session.blpop(settings.NODE_ID, timeout=TASK_POP_INTERVAL)
+            return await self._session.blpop(self._NODE_TASK_QUEUE, timeout=TASK_POP_INTERVAL)
         except (TimeoutError, ConnectionError) as exc:
             logger.warning(f"Redis connection error. (exception: {exc}), {traceback.format_exc()}")
             return None

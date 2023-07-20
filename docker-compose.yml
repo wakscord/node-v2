@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   node:
-    image: wakscode-node
+    image: wakscord-node
     build: .
     command: python app/main.py
     restart: always
