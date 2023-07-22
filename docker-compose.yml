@@ -5,7 +5,3 @@ services:
     image: wakscord-node
     build: .
     restart: always
-    volumes:
-      - type: bind
-        source: .env
-        target: /code/.env
