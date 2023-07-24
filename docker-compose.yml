@@ -4,9 +4,4 @@ services:
   node:
     image: wakscord-node
     build: .
-    command: python app/main.py
     restart: always
-    volumes:
-      - type: bind
-        source: .env
-        target: /code/.env

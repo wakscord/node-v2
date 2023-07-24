@@ -8,3 +8,4 @@ COPY ./requirements.txt /code/requirements.txt
 COPY ./app /code/app
 
 RUN pip3 install --no-cache-dir --upgrade -r /code/requirements.txt
+ENTRYPOINT python app/main.py
