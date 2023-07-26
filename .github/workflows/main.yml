@@ -29,7 +29,7 @@ jobs:
           echo "MAX_CONCURRENT=$MAX_CONCURRENT" >> .env
           echo "REDIS_URL=$REDIS_URL" >> .env
           echo "REDIS_PORT=$REDIS_PORT" >> .env
-          echo "REDIS_PASSWORD$REDIS_PASSWORD" >> .env
+          echo "REDIS_PASSWORD=$REDIS_PASSWORD" >> .env
           echo "PROXY_USER=$PROXY_USER" >> .env
           echo "PROXY_PASSWORD=$PROXY_PASSWORD" >> .env
         env:
