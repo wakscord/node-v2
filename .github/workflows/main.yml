@@ -7,7 +7,6 @@ on:
 env:
   DOCKER_IMAGE: minibox24/wakscord-node:latest
   SERVICE_NAME: wakscord-node
-  CONTAINER_REPLICA_COUNT: 10
 
 jobs:
   build:
@@ -69,4 +68,4 @@ jobs:
           host: ${{ secrets.MANAGER_HOST }}
           username: ${{ secrets.MANAGER_USERNAME }}
           key: ${{ secrets.MANAGER_SSH_KEY }}
-          script: docker service update --replicas ${{ env.CONTAINER_REPLICA_COUNT }} --replicas-max-per-node 1 --image ${{ env.DOCKER_IMAGE }} ${{ env.SERVICE_NAME }}
+          script: docker service update --image ${{ env.DOCKER_IMAGE }} ${{ env.SERVICE_NAME }}
