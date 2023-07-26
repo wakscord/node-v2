@@ -1,0 +1,72 @@
+name: Docker Image Build and Swarm Deploy
+on:
+  push:
+    branches:
+      - main
+
+env:
+  DOCKER_IMAGE: minibox24/wakscord-node:latest
+  SERVICE_NAME: wakscord-node
+  CONTAINER_REPLICA_COUNT: 10
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Create Dotenv
+        run: |
+          touch .env
+          echo "MAX_CONCURRENT=$MAX_CONCURRENT" >> .env
+          echo "REDIS_URL=$REDIS_URL" >> .env
+          echo "REDIS_PORT=$REDIS_PORT" >> .env
+          echo "REDIS_PASSWORD$REDIS_PASSWORD" >> .env
+          echo "PROXY_USER=$PROXY_USER" >> .env
+          echo "PROXY_PASSWORD=$PROXY_PASSWORD" >> .env
+        env:
+          MAX_CONCURRENT: ${{ vars.MAX_CONCURRENT }}
+          REDIS_URL: ${{ secrets.REDIS_URL }}
+          REDIS_PORT: ${{ secrets.REDIS_PORT }}
+          REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
+          PROXY_USER: ${{ secrets.PROXY_USER }}
+          PROXY_PASSWORD: ${{ secrets.PROXY_PASSWORD }}
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          tags: ${{ env.DOCKER_IMAGE }}
+          platforms: |
+            linux/amd64
+            linux/arm64
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    needs: [build]
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Deploy to swarm
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.MANAGER_HOST }}
+          username: ${{ secrets.MANAGER_USERNAME }}
+          key: ${{ secrets.MANAGER_SSH_KEY }}
+          script: docker service update --replicas ${{ env.CONTAINER_REPLICA_COUNT }} --replicas-max-per-node 1 --image ${{ env.DOCKER_IMAGE }} ${{ env.SERVICE_NAME }}
