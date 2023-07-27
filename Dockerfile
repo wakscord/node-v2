@@ -9,4 +9,4 @@ RUN pip3 install --no-cache-dir --upgrade -r /code/requirements.txt
 COPY ./.env /code/.env
 COPY ./app /code/app
 
-ENTRYPOINT python app/main.py
+ENTRYPOINT ["python", "app/main.py"]
