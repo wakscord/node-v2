@@ -5,7 +5,6 @@ from typing import Callable
 
 import aiohttp
 import orjson
-import redis.exceptions
 from aiohttp import BasicAuth, ClientResponse, ClientSession
 
 from app.alarm.constants import DEFAULT_RETRY_AFTER, DEFAULT_RETRY_ATTEMPT, DISCORD_WEBHOOK_URL
@@ -59,10 +58,6 @@ class AlarmSender:
             logger.warning(exc)
         except aiohttp.ClientConnectionError as exc:
             logger.warning(f"클라이언트 커넥션 에러가 발생했습니다, (exception: {exc})")
-        except redis.exceptions.ConnectionError as exc:
-            # TODO: 레디스 커넥션 이슈 해결 시 해당 로직 제거
-            logger.warning(f"레디스 커넥션 에러가 발생했습니다. 서버를 재시작 합니다, (exception: {exc}\n{traceback.format_exc()})")
-            exit(0)
         except Exception as exc:
             logger.warning(f"전송에 실패했습니다, (exception: {exc}\n{traceback.format_exc()})")
         return url
