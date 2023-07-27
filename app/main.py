@@ -6,9 +6,11 @@ from app.alarm.sender import AlarmSender
 from app.alarm.task_parser import AlarmTaskParser
 from app.common.di import AppContainer
 from app.common.exceptions import async_exception_handler
+from app.common.process_status import process_status_handler
 from app.node.manager import NodeManager
 
 
+@process_status_handler
 @inject
 async def process_task(task: tuple[str, str], alarm_sender: AlarmSender = Provide[AppContainer.alarm_sender]) -> None:
     parser = AlarmTaskParser(task)

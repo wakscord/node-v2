@@ -1,10 +1,13 @@
 import asyncio
 import traceback
+from asyncio import AbstractEventLoop
 from datetime import timedelta
+from signal import SIGINT, SIGTERM
 
 from redis.asyncio import Redis
 
 from app.common.logger import logger
+from app.common.process_status import ProcessStatus, process_status_manager
 from app.node.constants import NODE_HEALTH_CHECK_INTERVAL, TASK_POP_INTERVAL
 
 
@@ -17,9 +20,10 @@ class NodeManager:
 
     async def join_server(self) -> None:
         await self._ping_session()
-
         logger.info(f"Start the node server. (node_id: {self._node_id})")
+
         asyncio.create_task(self._join())
+        self._add_signal_handler()
 
     async def pop_task(self) -> tuple[str, str] | None:
         try:
@@ -49,3 +53,21 @@ class NodeManager:
         await self._session.setex(
             f"health_check:{self._node_id}", timedelta(seconds=NODE_HEALTH_CHECK_INTERVAL), value=1
         )
+
+    @staticmethod
+    def _add_signal_handler() -> None:
+        async def _signal_handler(loop: AbstractEventLoop) -> None:
+            while True:
+                await asyncio.sleep(0.1)
+                can_stop = process_status_manager.get_current() == ProcessStatus.WAITING
+                if can_stop:
+                    try:
+                        tasks = [task for task in asyncio.all_tasks() if task is not asyncio.current_task()]
+                        [task.cancel() for task in tasks]
+                    finally:
+                        await asyncio.sleep(1)
+                        loop.stop()
+
+        loop = asyncio.get_running_loop()
+        for signal in [SIGINT, SIGTERM]:
+            loop.add_signal_handler(signal, lambda x: x.create_task(_signal_handler(x)), loop)
