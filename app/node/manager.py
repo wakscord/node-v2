@@ -25,15 +25,19 @@ class NodeManager:
         try:
             return await self._session.blpop(self._NODE_TASK_QUEUE, timeout=TASK_POP_INTERVAL)
         except (TimeoutError, ConnectionError) as exc:
-            logger.warning(f"Redis connection error. (exception: {exc}), {traceback.format_exc()}")
+            await self._format_connection_exc(exc)
             return None
 
     async def _ping_session(self) -> None:
         try:
             await self._session.ping()
         except Exception as exc:
-            logger.warning(f"Redis connection error. (exception: {exc}), {traceback.format_exc()}")
+            await self._format_connection_exc(exc)
             exit(0)
+
+    @staticmethod
+    async def _format_connection_exc(exc: Exception) -> None:
+        logger.warning(f"Connection error. (exception: {exc}), {traceback.format_exc()}")
 
     async def _join(self) -> None:
         await self._session.hset("node_servers", self._node_id, 1)
