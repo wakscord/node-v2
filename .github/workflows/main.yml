@@ -5,7 +5,7 @@ on:
       - main
 
 env:
-  DOCKER_IMAGE: minibox24/wakscord-node:latest
+  DOCKER_IMAGE: minibox24/wakscord-node
   SERVICE_NAME: wakscord-node
 
 jobs:
@@ -39,6 +39,10 @@ jobs:
           PROXY_USER: ${{ secrets.PROXY_USER }}
           PROXY_PASSWORD: ${{ secrets.PROXY_PASSWORD }}
 
+      - name: Get commit hash
+        run: |
+          echo "COMMIT_HASH=$(git rev-parse --short "$GITHUB_SHA")" >> $GITHUB_ENV
+
       - name: Login to DockerHub
         uses: docker/login-action@v1
         with:
@@ -50,7 +54,9 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${{ env.DOCKER_IMAGE }}
+          tags: |
+            ${{ env.DOCKER_IMAGE }}:${{ env.COMMIT_HASH }}
+            ${{ env.DOCKER_IMAGE }}:latest
           platforms: |
             linux/amd64
             linux/arm64
@@ -68,4 +74,4 @@ jobs:
           host: ${{ secrets.MANAGER_HOST }}
           username: ${{ secrets.MANAGER_USERNAME }}
           key: ${{ secrets.MANAGER_SSH_KEY }}
-          script: docker service update --image ${{ env.DOCKER_IMAGE }} ${{ env.SERVICE_NAME }}
+          script: docker service update --image ${{ env.DOCKER_IMAGE }}:latest ${{ env.SERVICE_NAME }}
