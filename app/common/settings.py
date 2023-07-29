@@ -1,12 +1,11 @@
 import os
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Callable
 from uuid import uuid4
 
-from dotenv import dotenv_values
+from dotenv import dotenv_values, find_dotenv
 
-env_path = Path.joinpath(Path(__file__).parent.parent.parent.resolve(), ".env")
+env_path = find_dotenv()
 if not os.path.exists(env_path):
     raise Exception("Dotenv is not exists.")
 
