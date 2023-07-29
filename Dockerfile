@@ -4,7 +4,7 @@ WORKDIR /code
 ENV PYTHONPATH "${PYTHONPATH}:/code"
 
 COPY ./requirements.txt /code/requirements.txt
-RUN pip3 install --no-cache-dir --upgrade -r /code/requirements.txt
+RUN pip3 install -r /code/requirements.txt
 
 COPY ./.env /code/.env
 COPY ./app /code/app
