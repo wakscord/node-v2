@@ -5,7 +5,9 @@ from typing import Callable
 
 from dotenv import dotenv_values, find_dotenv
 
-env_path = find_dotenv()
+is_prod = os.getenv("ENV") == "PROD"
+
+env_path = "/run/secrets/wakscord-env" if is_prod else find_dotenv()
 if not os.path.exists(env_path):
     raise Exception("Dotenv is not exists.")
 
