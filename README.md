@@ -52,12 +52,12 @@ cp .env.sample .env
 .env는 다음 목록으로 구성돼 있습니다.
 
 ```dotenv
-MAX_CONCURRENT=2000     # 동시 메시지 전송 수 (optional)
-REDIS_URL=localhost     # 레디스 URL (required)
-REDIS_PORT=6379         # 레디스 포트  (optional)
-REDIS_PASSWORD=         # 레디스 비밀번호 (optional)
-PROXY_USER=             # 프록시 아이디 (optional)
-PROXY_PASSWORD=         # 프록시 비밀번호 (optional)
+MAX_CONCURRENT=2000         # 동시 메시지 전송 수 (optional)
+REDIS_URL=localhost         # 레디스 URL (required)
+REDIS_PORT=6379             # 레디스 포트  (optional)
+REDIS_PASSWORD={password}   # 레디스 비밀번호 (optional)
+PROXY_USER={user}           # 프록시 아이디 (optional)
+PROXY_PASSWORD={password}   # 프록시 비밀번호 (optional)
 ```
 
 .env 설정 후에 아래 스크립트를 통해서 서버를 실행합니다.
