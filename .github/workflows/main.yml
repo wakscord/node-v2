@@ -36,6 +36,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: .
+          file: Dockerfile.prod
           push: true
           tags: |
             ${{ env.DOCKER_IMAGE }}:${{ env.COMMIT_HASH }}
