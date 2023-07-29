@@ -1,8 +1,10 @@
+![Banner](https://github.com/wakscord/node-v2/assets/36909737/a01b11de-48a0-41ed-82d1-dc62f9f4b6e2)
 [![pre-commit.ci status](https://results.pre-commit.ci/badge/github/wakscord/node-v2/main.svg)](https://results.pre-commit.ci/latest/github/wakscord/node-v2/main)
+
 
 # 왁스코드 노드
 
-> 왁스코드 구독자 분들에게 왁타버스 멤버들의 채팅을 전송하는 서버입니다.
+왁스코드 구독자 분들에게 왁타버스 멤버들의 채팅을 전송하는 서버입니다.
 
 
 ## 설정
@@ -20,20 +22,22 @@ python -m pip install -r requirements.txt # 패키지 설치
 
 ### Pre-commit 설정
 
-pre-commit hooks를 install 합니다.
-
 pre-commit은 formatting, linting, type checking을 커밋 이전에 수행합니다.
 
-```shell
-pre-commit install
-```
-
-아래 목록의 라이브러리를 사용중입니다.
+아래 목록의 라이브러리를 사용하고 있습니다.
 
 - import formatting: isort
 - formatting: black
 - convention: pep8 (flake8)
 - type checking: mypy
+
+<br/>
+pre-commit hooks를 install 합니다.
+
+```shell
+pre-commit install
+```
+
 
 ## 실행
 
@@ -45,7 +49,7 @@ sample 파일을 복사해서 .env 파일을 생성합니다.
 cp .env.sample .env
 ```
 
-.env는 다음과 목록으로 구성돼 있습니다.
+.env는 다음 목록으로 구성돼 있습니다.
 
 ```dotenv
 MAX_CONCURRENT=2000     # 동시 메시지 전송 수 (optional)
