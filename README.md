@@ -6,7 +6,6 @@
 
 왁스코드 구독자 분들에게 왁타버스 멤버들의 채팅을 전송하는 서버입니다.
 
-
 ## 설정
 
 ### Python 가상환경 설정
@@ -32,12 +31,12 @@ pre-commit은 formatting, linting, type checking을 커밋 이전에 수행합�
 - type checking: mypy
 
 <br/>
+
 pre-commit hooks를 install 합니다.
 
 ```shell
 pre-commit install
 ```
-
 
 ## 실행
 
