@@ -22,23 +22,6 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
-      - name: Create Dotenv
-        run: |
-          touch .env
-          echo "MAX_CONCURRENT=$MAX_CONCURRENT" >> .env
-          echo "REDIS_URL=$REDIS_URL" >> .env
-          echo "REDIS_PORT=$REDIS_PORT" >> .env
-          echo "REDIS_PASSWORD=$REDIS_PASSWORD" >> .env
-          echo "PROXY_USER=$PROXY_USER" >> .env
-          echo "PROXY_PASSWORD=$PROXY_PASSWORD" >> .env
-        env:
-          MAX_CONCURRENT: ${{ vars.MAX_CONCURRENT }}
-          REDIS_URL: ${{ secrets.REDIS_URL }}
-          REDIS_PORT: ${{ secrets.REDIS_PORT }}
-          REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
-          PROXY_USER: ${{ secrets.PROXY_USER }}
-          PROXY_PASSWORD: ${{ secrets.PROXY_PASSWORD }}
-
       - name: Get commit hash
         run: |
           echo "COMMIT_HASH=$(git rev-parse --short "$GITHUB_SHA")" >> $GITHUB_ENV
@@ -53,6 +36,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: .
+          file: Dockerfile.prod
           push: true
           tags: |
             ${{ env.DOCKER_IMAGE }}:${{ env.COMMIT_HASH }}
