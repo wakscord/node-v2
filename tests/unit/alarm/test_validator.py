@@ -58,9 +58,9 @@ async def test_is_done_success():
     # given
     response = SendResponseDTO(url=None, status=204, text=None)
     # when
-    is_success = await AlarmResponseValidator.is_done(response)
+    result = await AlarmResponseValidator.validate(response)
     # then
-    assert is_success
+    assert result is None
 
 
 @pytest.mark.asyncio
@@ -70,7 +70,7 @@ async def test_is_done_rate_limit():
     # then
     with pytest.raises(RateLimitException):
         # when
-        await AlarmResponseValidator.is_done(response)
+        await AlarmResponseValidator.validate(response)
 
 
 @pytest.mark.asyncio
@@ -85,7 +85,7 @@ async def test_is_done_internal_error():
     # then
     with pytest.raises(AlarmSendFailedException) as exc:
         # when
-        await AlarmResponseValidator.is_done(response)
+        await AlarmResponseValidator.validate(response)
     assert error_msg in str(exc.value)
 
 
@@ -95,7 +95,7 @@ async def test_is_done_unsubscriber_success():
     response = SendResponseDTO(url=None, status=404, text=None)
     # when
     with pytest.raises(UnsubscriberException):
-        await AlarmResponseValidator.is_done(response)
+        await AlarmResponseValidator.validate(response)
 
 
 @pytest.mark.asyncio
@@ -107,6 +107,6 @@ async def test_is_done_unsubscriber_failed_parse_url():
     # when
     exc: UnsubscriberException
     with pytest.raises(UnsubscriberException) as exc:
-        await AlarmResponseValidator.is_done(response)
+        await AlarmResponseValidator.validate(response)
         # then
         assert exc.unsubscriber == raw_webhook_uri

@@ -9,9 +9,9 @@ from app.alarm.exceptions import AlarmSendFailedException, RateLimitException, U
 
 class AlarmResponseValidator:
     @classmethod
-    async def is_done(cls, response: SendResponseDTO) -> bool:
+    async def validate(cls, response: SendResponseDTO) -> None:
         if cls._is_success(response.status):
-            return True
+            return
 
         if cls._is_unsubscribe(response.status):
             unsubscriber = cls._parse_unsubscriber(response.url)

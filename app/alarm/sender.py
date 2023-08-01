@@ -4,7 +4,6 @@ import traceback
 from typing import Callable
 
 import aiohttp
-import orjson
 from aiohttp import BasicAuth, ClientResponse, ClientSession
 
 from app.alarm.constants import DEFAULT_RETRY_AFTER, DEFAULT_RETRY_ATTEMPT, DISCORD_WEBHOOK_URL
@@ -31,30 +30,30 @@ class AlarmService:
         self._unsubscriber_repo = unsubscriber_repo
         self.retry_rate_limiter = retry_rate_limiter
 
-    async def send(self, subscribers: list[str], message: dict) -> None:
-        data = orjson.dumps(message)
+    async def send(self, subscribers: list[str], message: bytes) -> None:
         chunked_subscribers_list = self._chunk_subscribers(subscribers, settings.MAX_CONCURRENT)
         for chunked_subscribers in chunked_subscribers_list:
-            proxy = await self._alarm_repo.get_least_usage_proxy()
-            async with aiohttp.ClientSession(headers=self._headers) as session:
-                alarms = [
-                    self._request(session, url=f"{DISCORD_WEBHOOK_URL}{key}", data=data, proxy=proxy)
-                    for key in chunked_subscribers
-                ]
-                result = await asyncio.gather(*alarms)
+            failed_subscribers: list[str] = await self._send(chunked_subscribers, message)
+            if not failed_subscribers:
+                continue
+            await self._retry_send(failed_subscribers, message)
 
-            failed_alarms = [alarm for alarm in result if alarm]
-            if failed_alarms:
-                proxy = await self._alarm_repo.get_least_usage_proxy()
-                retry_alarms = [self._retry(url=subscriber, data=data, proxy=proxy) for subscriber in failed_alarms]
-                self.retry_rate_limiter.add_alarms(retry_alarms)
+    async def _send(self, subscribers: list[str], message: bytes) -> list[str]:
+        proxy = await self._alarm_repo.get_least_usage_proxy()
+        async with aiohttp.ClientSession(headers=self._headers) as session:
+            alarms = [
+                self._request(session, url=f"{DISCORD_WEBHOOK_URL}{key}", data=message, proxy=proxy)
+                for key in subscribers
+            ]
+            responses = await asyncio.gather(*alarms)
+            return [response for response in responses if response]
 
     async def _request(self, session: ClientSession, url: str, data: bytes, proxy: str | None) -> str | None:
         proxy_auth = BasicAuth(settings.PROXY_USER, settings.PROXY_PASSWORD) if proxy else None
         try:
             response: ClientResponse = await session.post(url=url, data=data, proxy=proxy, proxy_auth=proxy_auth)
             response_dto = SendResponseDTO(url=response.url, status=response.status, text=response.text)
-            await AlarmResponseValidator.is_done(response_dto)
+            await AlarmResponseValidator.validate(response_dto)
             return None
         except UnsubscriberException as exc:
             if exc.unsubscriber:
@@ -67,11 +66,16 @@ class AlarmService:
             logger.warning(f"전송에 실패했습니다, (exception: {exc}\n{traceback.format_exc()})")
         return url
 
-    async def _retry(self, url: str, data: bytes, proxy: str | None) -> None:
+    async def _retry_send(self, failed_subscribers: list[str], message: bytes) -> None:
+        proxy = await self._alarm_repo.get_least_usage_proxy()
+        retry_alarms = [self._retry(url=subscriber, message=message, proxy=proxy) for subscriber in failed_subscribers]
+        self.retry_rate_limiter.add_alarms(retry_alarms)
+
+    async def _retry(self, url: str, message: bytes, proxy: str | None) -> None:
         remain_retry_attempt = DEFAULT_RETRY_ATTEMPT
         async with aiohttp.ClientSession(headers=self._headers) as session:
             while True:
-                is_success = not await self._request(session, url=url, data=data, proxy=proxy)
+                is_success = not await self._request(session, url=url, data=message, proxy=proxy)
                 if is_success or not remain_retry_attempt:
                     break
                 remain_retry_attempt -= 1

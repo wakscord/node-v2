@@ -1,6 +1,7 @@
 import asyncio
 
 from dependency_injector.wiring import Provide, inject
+from orjson import orjson
 
 from app.alarm.sender import AlarmService
 from app.common.di import AppContainer
@@ -19,8 +20,13 @@ async def process_task(
     unsubscriber_service: UnsubscriberService = Provide[AppContainer.unsubscriber_service],
 ) -> None:
     parser = TaskParser(task)
-    active_subscribers = await unsubscriber_service.exclude_unsubscribers(parser.parse_subscribers())
-    await alarm_service.send(active_subscribers, parser.parse_message())
+    request_subscribers = parser.parse_subscribers()
+    request_message = parser.parse_message()
+
+    active_subscribers: list[str] = await unsubscriber_service.exclude_unsubscribers(request_subscribers)
+    message: bytes = orjson.dumps(request_message)
+
+    await alarm_service.send(active_subscribers, message)
 
 
 @async_exception_handler
