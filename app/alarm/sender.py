@@ -31,12 +31,9 @@ class AlarmSender:
         self._unsubscriber_repo = unsubscriber_repo
         self.retry_rate_limiter = retry_rate_limiter
 
-    async def send(self, subscribers: set[str], message: dict) -> None:
-        await self._send(subscribers, message)
-
-    async def _send(self, subscribers: set[str], message: dict) -> None:
+    async def send(self, subscribers: list[str], message: dict) -> None:
         data = orjson.dumps(message)
-        chunked_subscribers_list = self._chunk_subscribers(list(subscribers), settings.MAX_CONCURRENT)
+        chunked_subscribers_list = self._chunk_subscribers(subscribers, settings.MAX_CONCURRENT)
         for chunked_subscribers in chunked_subscribers_list:
             proxy = await self._alarm_repo.get_least_usage_proxy()
             async with aiohttp.ClientSession(headers=self._headers) as session:

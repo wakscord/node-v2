@@ -5,6 +5,6 @@ class UnsubscriberService:
     def __init__(self, repo: UnsubscriberRepository):
         self._repo = repo
 
-    async def exclude_unsubscribers(self, subscribers: list[str]) -> set[str]:
+    async def exclude_unsubscribers(self, subscribers: list[str]) -> list[str]:
         unsubscribers: set[str] = await self._repo.get_unsubscribers()
-        return set(subscribers) - unsubscribers
+        return list(set(subscribers) - unsubscribers)

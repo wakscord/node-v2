@@ -15,4 +15,4 @@ async def test_exclude_unsubscribers(unsubscriber_repo: UnsubscriberFakeReposito
     active_subscribers = await service.exclude_unsubscribers(subscribers)
 
     # then
-    assert active_subscribers == {"subscriber2"}
+    assert active_subscribers == ["subscriber2"]
