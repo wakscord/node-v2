@@ -9,7 +9,7 @@ from aiohttp import BasicAuth, ClientResponse, ClientSession
 
 from app.alarm.constants import DEFAULT_RETRY_AFTER, DEFAULT_RETRY_ATTEMPT, DISCORD_WEBHOOK_URL
 from app.alarm.dtos import SendResponseDTO
-from app.alarm.exceptions import AlarmSendFailedException, RateLimitException
+from app.alarm.exceptions import AlarmSendFailedException, RateLimitException, UnsubscriberException
 from app.alarm.repository import AlarmRedisRepository
 from app.alarm.response_validator import AlarmResponseValidator
 from app.common.logger import logger
@@ -52,8 +52,11 @@ class AlarmSender:
         try:
             response: ClientResponse = await session.post(url=url, data=data, proxy=proxy, proxy_auth=proxy_auth)
             response_dto = SendResponseDTO(url=response.url, status=response.status, text=response.text)
-            await AlarmResponseValidator(self._repo).is_done(response_dto)
+            await AlarmResponseValidator.is_done(response_dto)
             return None
+        except UnsubscriberException as exc:
+            if exc.unsubscriber:
+                await self._repo.add_unsubscriber(exc.unsubscriber)
         except (RateLimitException, AlarmSendFailedException) as exc:
             logger.warning(exc)
         except aiohttp.ClientConnectionError as exc:

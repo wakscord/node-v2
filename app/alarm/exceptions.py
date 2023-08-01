@@ -28,3 +28,11 @@ class AlarmSendFailedException(AppException):
 class RateLimitException(AppException):
     def __str__(self) -> str:
         return "너무 많은 요청을 보내서 요청이 실패했습니다."
+
+
+class UnsubscriberException(AppException):
+    def __init__(self, unsubscriber: str | None):
+        self.unsubscriber = unsubscriber
+
+    def __str__(self) -> str:
+        return f"구독을 해지한 유저 입니다, (key: {self.unsubscriber})"

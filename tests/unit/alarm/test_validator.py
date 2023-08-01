@@ -3,9 +3,8 @@ import yarl
 
 from app.alarm.constants import DISCORD_WEBHOOK_URL
 from app.alarm.dtos import SendResponseDTO
-from app.alarm.exceptions import AlarmSendFailedException, RateLimitException
+from app.alarm.exceptions import AlarmSendFailedException, RateLimitException, UnsubscriberException
 from app.alarm.response_validator import AlarmResponseValidator
-from tests.unit.alarm.conftest import AlarmFakeRepository
 
 
 def test_success_status_code():
@@ -55,27 +54,27 @@ def test_parse_unsubscriber_none_parse_url():
 
 
 @pytest.mark.asyncio
-async def test_is_done_success(alarm_repo: AlarmFakeRepository):
+async def test_is_done_success():
     # given
     response = SendResponseDTO(url=None, status=204, text=None)
     # when
-    is_success = await AlarmResponseValidator(repo=alarm_repo).is_done(response)
+    is_success = await AlarmResponseValidator.is_done(response)
     # then
     assert is_success
 
 
 @pytest.mark.asyncio
-async def test_is_done_rate_limit(alarm_repo: AlarmFakeRepository):
+async def test_is_done_rate_limit():
     # given
     response = SendResponseDTO(url=None, status=429, text=None)
     # then
     with pytest.raises(RateLimitException):
         # when
-        await AlarmResponseValidator(repo=alarm_repo).is_done(response)
+        await AlarmResponseValidator.is_done(response)
 
 
 @pytest.mark.asyncio
-async def test_is_done_internal_error(alarm_repo: AlarmFakeRepository):
+async def test_is_done_internal_error():
     # given
     error_msg = "This is test"
 
@@ -86,28 +85,28 @@ async def test_is_done_internal_error(alarm_repo: AlarmFakeRepository):
     # then
     with pytest.raises(AlarmSendFailedException) as exc:
         # when
-        await AlarmResponseValidator(repo=alarm_repo).is_done(response)
+        await AlarmResponseValidator.is_done(response)
     assert error_msg in str(exc.value)
 
 
 @pytest.mark.asyncio
-async def test_is_done_unsubscriber_success(alarm_repo: AlarmFakeRepository):
+async def test_is_done_unsubscriber_success():
     # given
     response = SendResponseDTO(url=None, status=404, text=None)
     # when
-    await AlarmResponseValidator(repo=alarm_repo).is_done(response)
-    # then
-    assert alarm_repo.unsubscribers == []
+    with pytest.raises(UnsubscriberException):
+        await AlarmResponseValidator.is_done(response)
 
 
 @pytest.mark.asyncio
-async def test_is_done_unsubscriber_failed_parse_url(alarm_repo: AlarmFakeRepository):
+async def test_is_done_unsubscriber_failed_parse_url():
     # given
     raw_webhook_uri = "12345678/webhook"
     url = yarl.URL(f"{DISCORD_WEBHOOK_URL}{raw_webhook_uri}")
     response = SendResponseDTO(url=url, status=401, text=None)
     # when
-    result = await AlarmResponseValidator(repo=alarm_repo).is_done(response)
-    # then
-    assert result
-    assert alarm_repo.unsubscribers == [raw_webhook_uri]
+    exc: UnsubscriberException
+    with pytest.raises(UnsubscriberException) as exc:
+        await AlarmResponseValidator.is_done(response)
+        # then
+        assert exc.unsubscriber == raw_webhook_uri
