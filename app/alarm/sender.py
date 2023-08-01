@@ -10,7 +10,7 @@ from aiohttp import BasicAuth, ClientResponse, ClientSession
 from app.alarm.constants import DEFAULT_RETRY_AFTER, DEFAULT_RETRY_ATTEMPT, DISCORD_WEBHOOK_URL
 from app.alarm.dtos import SendResponseDTO
 from app.alarm.exceptions import AlarmSendFailedException, RateLimitException, UnsubscriberException
-from app.alarm.repository import AlarmRedisRepository
+from app.alarm.repository import AlarmRepository
 from app.alarm.response_validator import AlarmResponseValidator
 from app.common.logger import logger
 from app.common.settings import settings
@@ -18,12 +18,12 @@ from app.retry.rate_limiter import RetryRateLimiter
 from app.unsubscriber.repository import UnsubscriberRepository
 
 
-class AlarmSender:
+class AlarmService:
     _headers = {"Content-Type": "application/json"}
 
     def __init__(
         self,
-        alarm_repo: AlarmRedisRepository,
+        alarm_repo: AlarmRepository,
         unsubscriber_repo: UnsubscriberRepository,
         retry_rate_limiter: RetryRateLimiter,
     ):

@@ -2,7 +2,7 @@ from dependency_injector import containers, providers
 from redis.asyncio import BlockingConnectionPool, Redis
 
 from app.alarm.repository import AlarmRedisRepository
-from app.alarm.sender import AlarmSender
+from app.alarm.sender import AlarmService
 from app.common.settings import settings
 from app.node.manager import NodeManager
 from app.retry.rate_limiter import RetryRateLimiter
@@ -34,7 +34,7 @@ class AppContainer(containers.DeclarativeContainer):
     alarm_repo = providers.Singleton(AlarmRedisRepository, session=cache_session)
     unsubscriber_repo = providers.Singleton(UnsubscriberRedisRepository, session=cache_session)
 
-    alarm_sender = providers.Singleton(
-        AlarmSender, alarm_repo=alarm_repo, unsubscriber_repo=unsubscriber_repo, retry_rate_limiter=retry_rate_limiter
+    alarm_service = providers.Singleton(
+        AlarmService, alarm_repo=alarm_repo, unsubscriber_repo=unsubscriber_repo, retry_rate_limiter=retry_rate_limiter
     )
     unsubscriber_service = providers.Singleton(UnsubscriberService, repo=unsubscriber_repo)
