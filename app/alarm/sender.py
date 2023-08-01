@@ -79,10 +79,6 @@ class AlarmService:
                 await asyncio.sleep(current_retry_attempt * DEFAULT_RETRY_AFTER)
 
     @staticmethod
-    def _exclude_unsubscribers(subscribers: list[str], unsubscribers: set[str]) -> set[str]:
-        return set(subscribers) - unsubscribers
-
-    @staticmethod
     def _chunk_subscribers(subscribers: list[str], max_concurrent: int) -> list[list[str]]:
         chunk_len: int = math.ceil(len(subscribers) / max_concurrent)
         start_idx: Callable[[int], int] = lambda current_idx: current_idx * max_concurrent
