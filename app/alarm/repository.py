@@ -5,15 +5,6 @@ from redis.asyncio import Redis
 
 class AlarmRepository(ABC):
     _PROXIES_KEY = "proxies"
-    _UNSUBSCRIBERS_KEY = "unsubscribers"
-
-    @abstractmethod
-    async def get_unsubscribers(self) -> set[str]:
-        raise NotImplementedError
-
-    @abstractmethod
-    async def add_unsubscriber(self, unsubscriber: str) -> None:
-        raise NotImplementedError
 
     @abstractmethod
     async def get_least_usage_proxy(self) -> str | None:
@@ -23,12 +14,6 @@ class AlarmRepository(ABC):
 class AlarmRedisRepository(AlarmRepository):
     def __init__(self, session: Redis):
         self._session = session
-
-    async def get_unsubscribers(self) -> set[str]:
-        return await self._session.smembers(self._UNSUBSCRIBERS_KEY)
-
-    async def add_unsubscriber(self, unsubscriber: str) -> None:
-        await self._session.sadd(self._UNSUBSCRIBERS_KEY, unsubscriber)
 
     async def get_least_usage_proxy(self) -> str | None:
         least_usage_proxy: list[str] = await self._session.zrange(self._PROXIES_KEY, start=0, end=0)

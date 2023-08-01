@@ -15,25 +15,30 @@ from app.alarm.response_validator import AlarmResponseValidator
 from app.common.logger import logger
 from app.common.settings import settings
 from app.retry.rate_limiter import RetryRateLimiter
+from app.unsubscriber.repository import UnsubscriberRepository
 
 
 class AlarmSender:
     _headers = {"Content-Type": "application/json"}
 
-    def __init__(self, repo: AlarmRedisRepository, retry_rate_limiter: RetryRateLimiter):
-        self._repo = repo
+    def __init__(
+        self,
+        alarm_repo: AlarmRedisRepository,
+        unsubscriber_repo: UnsubscriberRepository,
+        retry_rate_limiter: RetryRateLimiter,
+    ):
+        self._alarm_repo = alarm_repo
+        self._unsubscriber_repo = unsubscriber_repo
         self.retry_rate_limiter = retry_rate_limiter
 
-    async def send(self, subscribers: list[str], message: dict) -> None:
-        unsubscribers: set[str] = await self._repo.get_unsubscribers()
-        active_subscribers = self._exclude_unsubscribers(subscribers, unsubscribers)
-        await self._send(active_subscribers, message)
+    async def send(self, subscribers: set[str], message: dict) -> None:
+        await self._send(subscribers, message)
 
     async def _send(self, subscribers: set[str], message: dict) -> None:
         data = orjson.dumps(message)
         chunked_subscribers_list = self._chunk_subscribers(list(subscribers), settings.MAX_CONCURRENT)
         for chunked_subscribers in chunked_subscribers_list:
-            proxy = await self._repo.get_least_usage_proxy()
+            proxy = await self._alarm_repo.get_least_usage_proxy()
             async with aiohttp.ClientSession(headers=self._headers) as session:
                 alarms = [
                     self._request(session, url=f"{DISCORD_WEBHOOK_URL}{key}", data=data, proxy=proxy)
@@ -43,7 +48,7 @@ class AlarmSender:
 
             failed_alarms = [alarm for alarm in result if alarm]
             if failed_alarms:
-                proxy = await self._repo.get_least_usage_proxy()
+                proxy = await self._alarm_repo.get_least_usage_proxy()
                 retry_alarms = [self._retry(url=subscriber, data=data, proxy=proxy) for subscriber in failed_alarms]
                 self.retry_rate_limiter.add_alarms(retry_alarms)
 
@@ -56,7 +61,7 @@ class AlarmSender:
             return None
         except UnsubscriberException as exc:
             if exc.unsubscriber:
-                await self._repo.add_unsubscriber(exc.unsubscriber)
+                await self._unsubscriber_repo.add_unsubscriber(exc.unsubscriber)
         except (RateLimitException, AlarmSendFailedException) as exc:
             logger.warning(exc)
         except aiohttp.ClientConnectionError as exc:

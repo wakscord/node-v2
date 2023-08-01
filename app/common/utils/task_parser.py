@@ -4,7 +4,7 @@ from typing import Any
 import orjson
 from dacite import from_dict
 
-from app.alarm.exceptions import ParseInvalidArgumentException, ParseInvalidFormatException
+from app.common.utils.exceptions import ParseInvalidArgumentException, ParseInvalidFormatException
 
 
 @dataclass(frozen=True)
@@ -13,7 +13,7 @@ class AlarmTask:
     data: dict
 
 
-class AlarmTaskParser:
+class TaskParser:
     def __init__(self, raw_task: tuple[str, str]) -> None:
         self._alarm_task = self._parse_raw_task(raw_task)
 
