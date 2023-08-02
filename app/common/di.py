@@ -34,7 +34,5 @@ class AppContainer(containers.DeclarativeContainer):
     alarm_repo = providers.Singleton(AlarmRedisRepository, session=cache_session)
     unsubscriber_repo = providers.Singleton(UnsubscriberRedisRepository, session=cache_session)
 
-    alarm_service = providers.Singleton(
-        AlarmService, alarm_repo=alarm_repo, unsubscriber_repo=unsubscriber_repo, retry_rate_limiter=retry_rate_limiter
-    )
+    alarm_service = providers.Singleton(AlarmService, alarm_repo=alarm_repo, unsubscriber_repo=unsubscriber_repo)
     unsubscriber_service = providers.Singleton(UnsubscriberService, repo=unsubscriber_repo)

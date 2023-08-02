@@ -1,7 +1,7 @@
 import asyncio
 import math
 import traceback
-from typing import Callable
+from typing import Callable, Coroutine
 
 import aiohttp
 from aiohttp import BasicAuth, ClientResponse, ClientSession
@@ -13,7 +13,6 @@ from app.alarm.repository import AlarmRepository
 from app.alarm.response_validator import AlarmResponseValidator
 from app.common.logger import logger
 from app.common.settings import settings
-from app.retry.rate_limiter import RetryRateLimiter
 from app.unsubscriber.repository import UnsubscriberRepository
 
 
@@ -24,19 +23,21 @@ class AlarmService:
         self,
         alarm_repo: AlarmRepository,
         unsubscriber_repo: UnsubscriberRepository,
-        retry_rate_limiter: RetryRateLimiter,
     ):
         self._alarm_repo = alarm_repo
         self._unsubscriber_repo = unsubscriber_repo
-        self.retry_rate_limiter = retry_rate_limiter
 
-    async def send(self, subscribers: list[str], message: bytes) -> None:
+    async def send(self, subscribers: list[str], message: bytes) -> list[Coroutine]:
+        should_retry_alarms = []
         chunked_subscribers_list = self._chunk_subscribers(subscribers, settings.MAX_CONCURRENT)
+
         for chunked_subscribers in chunked_subscribers_list:
             failed_subscribers: list[str] = await self._send(chunked_subscribers, message)
             if not failed_subscribers:
                 continue
-            await self._retry_send(failed_subscribers, message)
+            should_retry_alarms.extend(await self._create_retry_task(failed_subscribers, message))
+
+        return should_retry_alarms
 
     async def _send(self, subscribers: list[str], message: bytes) -> list[str]:
         proxy = await self._alarm_repo.get_least_usage_proxy()
@@ -66,10 +67,9 @@ class AlarmService:
             logger.warning(f"전송에 실패했습니다, (exception: {exc}\n{traceback.format_exc()})")
         return url
 
-    async def _retry_send(self, failed_subscribers: list[str], message: bytes) -> None:
+    async def _create_retry_task(self, failed_subscribers: list[str], message: bytes) -> list[Coroutine]:
         proxy = await self._alarm_repo.get_least_usage_proxy()
-        retry_alarms = [self._retry(url=subscriber, message=message, proxy=proxy) for subscriber in failed_subscribers]
-        self.retry_rate_limiter.add_alarms(retry_alarms)
+        return [self._retry(url=subscriber, message=message, proxy=proxy) for subscriber in failed_subscribers]
 
     async def _retry(self, url: str, message: bytes, proxy: str | None) -> None:
         remain_retry_attempt = DEFAULT_RETRY_ATTEMPT
