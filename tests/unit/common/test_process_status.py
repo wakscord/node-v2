@@ -23,8 +23,8 @@ async def test_process_status_complete():
 @pytest.mark.asyncio
 async def test_process_status_handler(mocker: MockerFixture):
     # given
-    start_pather = mocker.patch("app.common.process_status.manager.start")
-    stop_pather = mocker.patch("app.common.process_status.manager.complete")
+    start_pather = mocker.patch.object(ProcessStatusManager, "start")
+    stop_pather = mocker.patch.object(ProcessStatusManager, "complete")
 
     # when
     await process_status_handler(AsyncMock())()
