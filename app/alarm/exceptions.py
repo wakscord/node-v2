@@ -1,3 +1,5 @@
+from enum import Enum
+
 from app.common.exceptions import AppException
 
 
@@ -20,3 +22,12 @@ class UnsubscriberException(AppException):
 
     def __str__(self) -> str:
         return f"구독을 해지한 유저 입니다, (key: {self.unsubscriber})"
+
+
+class RequestExc(Enum):
+    UNKNOWN = "전송에 실패했습니다"
+    AIOHTTP_CLIENT_CONN_ERROR = "클라이언트 커넥션 에러가 발생했습니다"
+
+    @staticmethod
+    def get_message(exc: "RequestExc") -> str:
+        return exc.value

@@ -8,7 +8,7 @@ from aiohttp import BasicAuth, ClientResponse, ClientSession
 
 from app.alarm.constants import DEFAULT_RETRY_AFTER, DEFAULT_RETRY_ATTEMPT, DISCORD_WEBHOOK_URL
 from app.alarm.dtos import SendResponseDTO
-from app.alarm.exceptions import AlarmSendFailedException, RateLimitException, UnsubscriberException
+from app.alarm.exceptions import AlarmSendFailedException, RateLimitException, RequestExc, UnsubscriberException
 from app.alarm.repository import AlarmRepository
 from app.alarm.response_validator import AlarmResponseValidator
 from app.common.logger import logger
@@ -62,9 +62,11 @@ class AlarmService:
         except (RateLimitException, AlarmSendFailedException) as exc:
             logger.warning(exc)
         except aiohttp.ClientConnectionError as exc:
-            logger.warning(f"클라이언트 커넥션 에러가 발생했습니다, (exception: {exc})")
+            exc_message = RequestExc.get_message(RequestExc.AIOHTTP_CLIENT_CONN_ERROR)
+            logger.warning(f"{exc_message}, (exception: {exc})")
         except Exception as exc:
-            logger.warning(f"전송에 실패했습니다, (exception: {exc}\n{traceback.format_exc()})")
+            exc_message = RequestExc.get_message(RequestExc.UNKNOWN)
+            logger.warning(f"{exc_message}, (exception: {exc}\n{traceback.format_exc()})")
         return url
 
     async def _create_retry_task(self, failed_subscribers: list[str], message: bytes) -> list[Coroutine]:
