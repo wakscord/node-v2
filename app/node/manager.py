@@ -7,7 +7,8 @@ from signal import SIGINT, SIGTERM
 from redis.asyncio import Redis
 
 from app.common.logger import logger
-from app.common.process_status import ProcessStatus, process_status_manager
+from app.common.process_status import ProcessStatus
+from app.common.process_status import manager as process_status_manager
 from app.node.constants import NODE_HEALTH_CHECK_INTERVAL, TASK_POP_INTERVAL
 
 
