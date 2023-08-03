@@ -10,6 +10,7 @@ from app.alarm.constants import DEFAULT_RETRY_ATTEMPT, DISCORD_WEBHOOK_URL
 from app.alarm.exceptions import RequestExc
 from app.alarm.repository import AlarmRepository
 from app.alarm.sender import AlarmService
+from app.common.logger import logger
 from app.unsubscriber.repository import UnsubscriberRepository
 from tests.unit.alarm.conftest import AiohttpFakeClientSession
 
@@ -30,8 +31,8 @@ async def test_retry_attempt(
 ):
     # given
     service = AlarmService(alarm_repo, unsubscriber_repo)
-    mocker.patch("app.alarm.sender.AlarmService._request", return_value="failed_url")
-    sleep_patcher = mocker.patch("asyncio.sleep", new_callable=AsyncMock)
+    mocker.patch.object(service, "_request", return_value="failed_url")
+    sleep_patcher = mocker.patch.object(asyncio, "sleep", new_callable=AsyncMock)
     # when
     await service._retry(url="", message="", proxy="")
     # then
@@ -46,7 +47,7 @@ async def test_create_retry_task(
     subscriber_count = 5
     failed_subscribers = [f"subscriber{i}" for i in range(subscriber_count)]
     service = AlarmService(alarm_repo, unsubscriber_repo)
-    mocker.patch("app.alarm.sender.AlarmService._retry", new_callable=AsyncMock)
+    mocker.patch.object(service, "_retry", new_callable=AsyncMock)
     # when
     retry_tasks = await service._create_retry_task(failed_subscribers, message="")
     # then
@@ -75,7 +76,7 @@ async def test_request_rate_limit(
     unsubscriber_repo: UnsubscriberRepository,
 ):
     service = AlarmService(alarm_repo, unsubscriber_repo)
-    logger_patcher = mocker.patch("app.common.logger.logger.warning")
+    logger_patcher = mocker.patch.object(logger, "warning")
 
     # given
     subscriber = "subscriber"
@@ -94,7 +95,7 @@ async def test_request_with_raise_unknown_exception(
     unsubscriber_repo: UnsubscriberRepository,
 ):
     service = AlarmService(alarm_repo, unsubscriber_repo)
-    logger_patcher = mocker.patch("app.common.logger.logger.warning")
+    logger_patcher = mocker.patch.object(logger, "warning")
 
     # given
     aiohttp_session = AiohttpFakeClientSession(response_status=204)
@@ -113,7 +114,7 @@ async def test_request_with_aiohttp_conn_error(
     unsubscriber_repo: UnsubscriberRepository,
 ):
     service = AlarmService(alarm_repo, unsubscriber_repo)
-    logger_patcher = mocker.patch("app.common.logger.logger.warning")
+    logger_patcher = mocker.patch.object(logger, "warning")
 
     # given
     aiohttp_session = AiohttpFakeClientSession(response_status=204)
@@ -169,7 +170,7 @@ async def test_private_send_if_failed_return_url(
     # given
     failed_subscriber_count = 10
     failed_subscribers = ["subscriber" for _ in range(failed_subscriber_count)]
-    mocker.patch("app.alarm.sender.AlarmService._request", return_value="url")
+    mocker.patch.object(service, "_request", return_value="url")
     # when
     responses = await service._send(subscribers=failed_subscribers, message="")
     # then
@@ -186,7 +187,7 @@ async def test_private_send_if_success_return_none(
     service = AlarmService(alarm_repo, unsubscriber_repo)
     # given
     subscribers = ["subscriber" for _ in range(10)]
-    mocker.patch("app.alarm.sender.AlarmService._request", return_value=None)
+    mocker.patch.object(service, "_request", return_value=None)
     # when
     responses = await service._send(subscribers=subscribers, message="")
     # then
@@ -204,8 +205,8 @@ async def test_send_if_failed_return_task(
     # given
     failed_subscriber_count = 10
     failed_subscribers = ["subscriber" for _ in range(failed_subscriber_count)]
-    mocker.patch("app.alarm.sender.AlarmService._request", return_value="url")
-    mocker.patch("app.alarm.sender.AlarmService._retry", return_value=None)
+    mocker.patch.object(service, "_request", return_value="url")
+    mocker.patch.object(service, "_retry", new_callable=AsyncMock)
     # when
     failed_alarms = await service.send(subscribers=failed_subscribers, message="")
     # then
@@ -225,7 +226,7 @@ async def test_send_if_success_return_none(
     service = AlarmService(alarm_repo, unsubscriber_repo)
     # given
     subscribers = ["subscriber" for _ in range(10)]
-    mocker.patch("app.alarm.sender.AlarmService._request", return_value=None)
+    mocker.patch.object(service, "_request", return_value=None)
     # when
     failed_alarms = await service.send(subscribers=subscribers, message="")
     # then
