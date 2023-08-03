@@ -1,5 +1,6 @@
 import pytest
 import yarl
+from _pytest._code import ExceptionInfo
 
 from app.alarm.constants import DISCORD_WEBHOOK_URL
 from app.alarm.dtos import SendResponseDTO
@@ -105,8 +106,8 @@ async def test_is_done_unsubscriber_failed_parse_url():
     url = yarl.URL(f"{DISCORD_WEBHOOK_URL}{raw_webhook_uri}")
     response = SendResponseDTO(url=url, status=401, text=None)
     # when
-    exc: UnsubscriberException
+    exc: ExceptionInfo
     with pytest.raises(UnsubscriberException) as exc:
         await AlarmResponseValidator.validate(response)
-        # then
-        assert exc.unsubscriber == raw_webhook_uri
+
+    assert exc.value.unsubscriber == raw_webhook_uri
