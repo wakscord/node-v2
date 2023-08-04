@@ -26,75 +26,55 @@ def test_chunk_subscribers():
 
 
 @pytest.mark.asyncio
-async def test_retry_attempt(
-    mocker: MockerFixture, alarm_repo: AlarmRepository, unsubscriber_repo: UnsubscriberRepository
-):
+async def test_retry_attempt(mocker: MockerFixture, alarm_service: AlarmService):
     # given
-    service = AlarmService(alarm_repo, unsubscriber_repo)
-    mocker.patch.object(service, "_request", return_value="failed_url")
+    mocker.patch.object(alarm_service, "_request", return_value="failed_url")
     sleep_patcher = mocker.patch.object(asyncio, "sleep", new_callable=AsyncMock)
     # when
-    await service._retry(url="", message="", proxy="")
+    await alarm_service._retry(url="", message="", proxy="")
     # then
     assert sleep_patcher.await_count == DEFAULT_RETRY_ATTEMPT
 
 
 @pytest.mark.asyncio
-async def test_create_retry_task(
-    mocker: MockerFixture, alarm_repo: AlarmRepository, unsubscriber_repo: UnsubscriberRepository
-):
+async def test_create_retry_task(mocker: MockerFixture, alarm_service: AlarmService):
     # given
     subscriber_count = 5
     failed_subscribers = [f"subscriber{i}" for i in range(subscriber_count)]
-    service = AlarmService(alarm_repo, unsubscriber_repo)
-    mocker.patch.object(service, "_retry", new_callable=AsyncMock)
+    mocker.patch.object(alarm_service, "_retry", new_callable=AsyncMock)
     # when
-    retry_tasks = await service._create_retry_task(failed_subscribers, message="")
+    retry_tasks = await alarm_service._create_retry_task(failed_subscribers, message="")
     # then
     assert len(retry_tasks) == subscriber_count
     await asyncio.gather(*retry_tasks)
 
 
 @pytest.mark.asyncio
-async def test_request_success(
-    alarm_repo: AlarmRepository,
-    unsubscriber_repo: UnsubscriberRepository,
-):
+async def test_request_success(alarm_service: AlarmService):
     # given
-    service = AlarmService(alarm_repo, unsubscriber_repo)
     aiohttp_session = AiohttpFakeClientSession(response_status=204)
     # when
-    result = await service._request(aiohttp_session, url="", data="", proxy=None)
+    result = await alarm_service._request(aiohttp_session, url="", data="", proxy=None)
     # then
     assert result is None
 
 
 @pytest.mark.asyncio
-async def test_request_rate_limit(
-    mocker: MockerFixture,
-    alarm_repo: AlarmRepository,
-    unsubscriber_repo: UnsubscriberRepository,
-):
-    service = AlarmService(alarm_repo, unsubscriber_repo)
+async def test_request_rate_limit(mocker: MockerFixture, alarm_service: AlarmService):
     logger_patcher = mocker.patch.object(logger, "warning")
 
     # given
     subscriber = "subscriber"
     aiohttp_session = AiohttpFakeClientSession(response_status=429)
     # when
-    result = await service._request(aiohttp_session, url=subscriber, data="", proxy=None)
+    result = await alarm_service._request(aiohttp_session, url=subscriber, data="", proxy=None)
     # then
     assert result == subscriber
     logger_patcher.assert_called_once()
 
 
 @pytest.mark.asyncio
-async def test_request_with_raise_unknown_exception(
-    mocker: MockerFixture,
-    alarm_repo: AlarmRepository,
-    unsubscriber_repo: UnsubscriberRepository,
-):
-    service = AlarmService(alarm_repo, unsubscriber_repo)
+async def test_request_with_raise_unknown_exception(mocker: MockerFixture, alarm_service: AlarmService):
     logger_patcher = mocker.patch.object(logger, "warning")
 
     # given
@@ -102,18 +82,13 @@ async def test_request_with_raise_unknown_exception(
     aiohttp_session.enable_raise_exception()
     exc_message = RequestExc.get_message(RequestExc.UNKNOWN)
     # when
-    await service._request(aiohttp_session, url="", data="", proxy=None)
+    await alarm_service._request(aiohttp_session, url="", data="", proxy=None)
     # then
     assert exc_message in logger_patcher.call_args[0][0]
 
 
 @pytest.mark.asyncio
-async def test_request_with_aiohttp_conn_error(
-    mocker: MockerFixture,
-    alarm_repo: AlarmRepository,
-    unsubscriber_repo: UnsubscriberRepository,
-):
-    service = AlarmService(alarm_repo, unsubscriber_repo)
+async def test_request_with_aiohttp_conn_error(mocker: MockerFixture, alarm_service: AlarmService):
     logger_patcher = mocker.patch.object(logger, "warning")
 
     # given
@@ -121,7 +96,7 @@ async def test_request_with_aiohttp_conn_error(
     aiohttp_session.enable_raise_exception(exception=aiohttp.ClientConnectionError)
     exc_message = RequestExc.get_message(RequestExc.AIOHTTP_CLIENT_CONN_ERROR)
     # when
-    await service._request(aiohttp_session, url="", data="", proxy=None)
+    await alarm_service._request(aiohttp_session, url="", data="", proxy=None)
     # then
     assert exc_message in logger_patcher.call_args[0][0]
 
@@ -161,54 +136,38 @@ async def test_request_with_unsubscriber_if_invalid_url(
 
 
 @pytest.mark.asyncio
-async def test_private_send_if_failed_return_url(
-    mocker: MockerFixture,
-    alarm_repo: AlarmRepository,
-    unsubscriber_repo: UnsubscriberRepository,
-):
-    service = AlarmService(alarm_repo, unsubscriber_repo)
+async def test_private_send_if_failed_return_url(mocker: MockerFixture, alarm_service: AlarmService):
     # given
     failed_subscriber_count = 10
     failed_subscribers = ["subscriber" for _ in range(failed_subscriber_count)]
-    mocker.patch.object(service, "_request", return_value="url")
+    mocker.patch.object(alarm_service, "_request", return_value="url")
     # when
-    responses = await service._send(subscribers=failed_subscribers, message="")
+    responses = await alarm_service._send(subscribers=failed_subscribers, message="")
     # then
     assert len(responses) == failed_subscriber_count
     assert isinstance(responses[0], str)
 
 
 @pytest.mark.asyncio
-async def test_private_send_if_success_return_none(
-    mocker: MockerFixture,
-    alarm_repo: AlarmRepository,
-    unsubscriber_repo: UnsubscriberRepository,
-):
-    service = AlarmService(alarm_repo, unsubscriber_repo)
+async def test_private_send_if_success_return_none(mocker: MockerFixture, alarm_service: AlarmService):
     # given
     subscribers = ["subscriber" for _ in range(10)]
-    mocker.patch.object(service, "_request", return_value=None)
+    mocker.patch.object(alarm_service, "_request", return_value=None)
     # when
-    responses = await service._send(subscribers=subscribers, message="")
+    responses = await alarm_service._send(subscribers=subscribers, message="")
     # then
     assert len(responses) == 0
 
 
 @pytest.mark.asyncio
-async def test_send_if_failed_return_task(
-    mocker: MockerFixture,
-    alarm_repo: AlarmRepository,
-    unsubscriber_repo: UnsubscriberRepository,
-):
-    service = AlarmService(alarm_repo, unsubscriber_repo)
-
+async def test_send_if_failed_return_task(mocker: MockerFixture, alarm_service: AlarmService):
     # given
     failed_subscriber_count = 10
     failed_subscribers = ["subscriber" for _ in range(failed_subscriber_count)]
-    mocker.patch.object(service, "_request", return_value="url")
-    mocker.patch.object(service, "_retry", new_callable=AsyncMock)
+    mocker.patch.object(alarm_service, "_request", return_value="url")
+    mocker.patch.object(alarm_service, "_retry", new_callable=AsyncMock)
     # when
-    failed_alarms = await service.send(subscribers=failed_subscribers, message="")
+    failed_alarms = await alarm_service.send(subscribers=failed_subscribers, message="")
     # then
     assert len(failed_alarms) == failed_subscriber_count
     assert isinstance(failed_alarms[0], Coroutine)
@@ -218,16 +177,11 @@ async def test_send_if_failed_return_task(
 
 
 @pytest.mark.asyncio
-async def test_send_if_success_return_none(
-    mocker: MockerFixture,
-    alarm_repo: AlarmRepository,
-    unsubscriber_repo: UnsubscriberRepository,
-):
-    service = AlarmService(alarm_repo, unsubscriber_repo)
+async def test_send_if_success_return_none(mocker: MockerFixture, alarm_service: AlarmService):
     # given
     subscribers = ["subscriber" for _ in range(10)]
-    mocker.patch.object(service, "_request", return_value=None)
+    mocker.patch.object(alarm_service, "_request", return_value=None)
     # when
-    failed_alarms = await service.send(subscribers=subscribers, message="")
+    failed_alarms = await alarm_service.send(subscribers=subscribers, message="")
     # then
     assert len(failed_alarms) == 0

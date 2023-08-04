@@ -1,9 +1,10 @@
 from dataclasses import dataclass
 
-import pytest
 from aiohttp import BasicAuth
+from pytest import fixture
 
 from app.alarm.repository import AlarmRepository
+from app.alarm.sender import AlarmService
 from app.unsubscriber.repository import UnsubscriberRepository
 
 
@@ -20,14 +21,19 @@ class UnsubscriberFakeRepository(UnsubscriberRepository):
         pass
 
 
-@pytest.fixture(scope="function")
+@fixture
 def alarm_repo():
     return AlarmFakeRepository()
 
 
-@pytest.fixture(scope="function")
+@fixture
 def unsubscriber_repo():
     return UnsubscriberFakeRepository()
+
+
+@fixture
+def alarm_service(alarm_repo, unsubscriber_repo):
+    return AlarmService(alarm_repo, unsubscriber_repo)
 
 
 @dataclass(frozen=True)
