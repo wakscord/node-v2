@@ -4,25 +4,20 @@ import yarl
 
 from app.alarm.constants import DISCORD_WEBHOOK_URL
 from app.alarm.dtos import SendResponseDTO
-from app.alarm.exceptions import AlarmSendFailedException, RateLimitException
-from app.alarm.repository import AlarmRepository
+from app.alarm.exceptions import AlarmSendFailedException, RateLimitException, UnsubscriberException
 
 
 class AlarmResponseValidator:
-    def __init__(self, repo: AlarmRepository):
-        self._repo = repo
+    @classmethod
+    async def validate(cls, response: SendResponseDTO) -> None:
+        if cls._is_success(response.status):
+            return
 
-    async def is_done(self, response: SendResponseDTO) -> bool:
-        if self._is_success(response.status):
-            return True
+        if cls._is_unsubscribe(response.status):
+            unsubscriber = cls._parse_unsubscriber(response.url)
+            raise UnsubscriberException(unsubscriber)
 
-        if self._is_unsubscribe(response.status):
-            unsubscriber = self._parse_unsubscriber(response.url)
-            if unsubscriber:
-                await self._repo.add_unsubscriber(unsubscriber)
-            return True
-
-        elif self._is_rate_limit(response.status):
+        elif cls._is_rate_limit(response.status):
             raise RateLimitException()
 
         message = f"status_code: {response.status}, body: {await response.text()}"

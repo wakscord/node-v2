@@ -2,8 +2,8 @@ import json
 
 import pytest
 
-from app.alarm.exceptions import ParseInvalidArgumentException, ParseInvalidFormatException
-from app.alarm.task_parser import AlarmTask, AlarmTaskParser
+from app.common.utils.exceptions import ParseInvalidArgumentException, ParseInvalidFormatException
+from app.common.utils.task_parser import AlarmTask, TaskParser
 
 
 def test_parse_raw_task():
@@ -15,7 +15,7 @@ def test_parse_raw_task():
     raw_task = ("node", str(request))
 
     # when
-    result: AlarmTask = AlarmTaskParser._parse_raw_task(raw_task=raw_task)
+    result: AlarmTask = TaskParser._parse_raw_task(raw_task=raw_task)
 
     # then
     assert result.keys == keys and result.data == data
@@ -32,7 +32,7 @@ def test_parse_raw_task_failed_format_invalid():
     # when
     with pytest.raises(ParseInvalidFormatException):
         # then
-        AlarmTaskParser._parse_raw_task(raw_task=raw_task)
+        TaskParser._parse_raw_task(raw_task=raw_task)
 
 
 def test_parse_validate_empty():
@@ -40,7 +40,7 @@ def test_parse_validate_empty():
     category = "subscribers"
     # when
     with pytest.raises(ParseInvalidArgumentException) as exc:
-        AlarmTaskParser._validate_empty(data=None, category=category)
+        TaskParser._validate_empty(data=None, category=category)
     # then
     assert f"{category} is empty" in str(exc.value)
 
@@ -54,7 +54,7 @@ def test_parse_subscribers():
     raw_task = ("node", str(request))
 
     # when
-    subscribers = AlarmTaskParser(raw_task=raw_task).parse_subscribers()
+    subscribers = TaskParser(raw_task=raw_task).parse_subscribers()
 
     # then
     assert subscribers == keys
@@ -69,7 +69,7 @@ def test_parse_message():
     raw_task = ("node", str(request))
 
     # when
-    message = AlarmTaskParser(raw_task=raw_task).parse_message()
+    message = TaskParser(raw_task=raw_task).parse_message()
 
     # then
     assert message == data

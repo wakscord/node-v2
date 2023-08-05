@@ -12,3 +12,10 @@ disallow_untyped_defs = true
 [tool.pytest.ini_options]
 testpaths = "tests"
 addopts = "--cov=app --cov-report term-missing:skip-covered"
+
+[tool.coverage.report]
+exclude_also = [
+    "if __name__ == .__main__.:",
+    "@(abc\\.)?abstractmethod",
+    "raise NotImplementedError",
+]

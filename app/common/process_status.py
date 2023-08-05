@@ -5,10 +5,10 @@ from enum import Enum
 def process_status_handler(func):  # type: ignore
     @functools.wraps(func)
     async def wrapper(*args, **kwargs):  # type: ignore
-        process_status_manager.start()
+        manager.start()
         result = await func(*args, **kwargs)
 
-        process_status_manager.complete()
+        manager.complete()
         return result
 
     return wrapper
@@ -33,4 +33,4 @@ class ProcessStatusManager:
         return self._status
 
 
-process_status_manager = ProcessStatusManager()
+manager = ProcessStatusManager()
