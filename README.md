@@ -64,3 +64,5 @@ PROXY_PASSWORD={password}   # 프록시 비밀번호 (optional)
 ```shell
 ./dev.sh
 ```
+
+# test
