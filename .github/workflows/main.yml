@@ -9,53 +9,21 @@ env:
   SERVICE_NAME: wakscord-node
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
-    environment: production
+    strategy:
+      matrix:
+        python-version: ["3.10"]
     steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-
-      - name: Get commit hash
+      - uses: actions/checkout@v3
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
         run: |
-          echo "COMMIT_HASH=$(git rev-parse --short "$GITHUB_SHA")" >> $GITHUB_ENV
-
-      - name: Login to DockerHub
-        uses: docker/login-action@v1
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: Build and push
-        uses: docker/build-push-action@v4
-        with:
-          context: .
-          file: Dockerfile.prod
-          push: true
-          tags: |
-            ${{ env.DOCKER_IMAGE }}:${{ env.COMMIT_HASH }}
-            ${{ env.DOCKER_IMAGE }}:latest
-          platforms: |
-            linux/amd64
-            linux/arm64
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-  deploy:
-    needs: [build]
-    runs-on: ubuntu-latest
-    environment: production
-    steps:
-      - name: Deploy to swarm
-        uses: appleboy/ssh-action@v1.0.0
-        with:
-          host: ${{ secrets.MANAGER_HOST }}
-          username: ${{ secrets.MANAGER_USERNAME }}
-          key: ${{ secrets.MANAGER_SSH_KEY }}
-          script: docker service update --image ${{ env.DOCKER_IMAGE }}:latest ${{ env.SERVICE_NAME }}
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+      - name: Test with pytest
+        run: |
+          pytest
