@@ -2,11 +2,11 @@ name: Test
 on:
   push:
     branches:
-      - '**'
-
-env:
-  DOCKER_IMAGE: minibox24/wakscord-node
-  SERVICE_NAME: wakscord-node
+      - 'main'
+  pull_request:
+    types:
+      - opened
+      - synchronize
 
 jobs:
   test:
@@ -23,8 +23,8 @@ jobs:
       - uses: actions/cache@v3
         id: cache
         with:
-          path: ${{ matrix.path }}
-          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          path: ${{ env.pythonLocation }}
+          key: ${{ runner.os }}-pip-${{ env.pythonLocation }}-${{ hashFiles('requirements.txt') }}
       - name: Install dependencies
         if: steps.cache.outputs.cache-hit != 'true'
         run: pip install -r requirements.txt
