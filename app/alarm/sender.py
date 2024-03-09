@@ -43,7 +43,7 @@ class AlarmService:
         proxy = await self._alarm_repo.get_least_usage_proxy()
         async with aiohttp.ClientSession(headers=self._headers) as session:
             alarms = [
-                self._request(session, url=f"{DISCORD_WEBHOOK_URL}{key}?wait=true", data=message, proxy=proxy)
+                self._request(session, url=f"{DISCORD_WEBHOOK_URL}{key}", data=message, proxy=proxy)
                 for key in subscribers
             ]
             responses = await asyncio.gather(*alarms)
