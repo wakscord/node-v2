@@ -48,7 +48,7 @@ class NodeManager:
         await self._session.hset("node_servers", self._node_id, 1)
         while True:
             await self._health_check()
-            await asyncio.sleep(NODE_HEALTH_CHECK_INTERVAL - 1)
+            await asyncio.sleep(1)
 
     async def _health_check(self) -> None:
         await self._session.setex(
