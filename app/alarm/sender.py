@@ -75,6 +75,18 @@ class AlarmService:
             # 처리 중 오류 발생 시 원본 데이터 사용 (로그 출력 없음)
             pass
 
+        # 메시지 본문에 "32768"이 있으면 URL에 "?with_components=true" 추가
+        try:
+            if isinstance(data, bytes):
+                if b"32768" in data:
+                    url += "?with_components=true"
+            elif isinstance(data, str):
+                if "32768" in data:
+                    url += "?with_components=true"
+        except:
+            # 오류 발생 시 URL 변경 없이 진행 (로그 출력 없음)
+            pass
+
         proxy_auth = BasicAuth(settings.PROXY_USER, settings.PROXY_PASSWORD) if proxy else None
         try:
             response: ClientResponse = await session.post(url=url, data=data, proxy=proxy, proxy_auth=proxy_auth)
