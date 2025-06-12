@@ -5,3 +5,22 @@ services:
     image: wakscord-node
     build: .
     restart: always
+    depends_on:
+      - redis
+    environment:
+      - REDIS_URL=redis
+      - REDIS_PORT=6379
+    networks:
+      - wakscord-network
+
+  redis:
+    image: redis:7.0.11
+    ports:
+      - "6379:6379"
+    restart: always
+    networks:
+      - wakscord-network
+
+networks:
+  wakscord-network:
+    driver: bridge
