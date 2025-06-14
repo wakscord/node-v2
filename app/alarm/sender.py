@@ -97,7 +97,10 @@ class AlarmService:
             while True:
                 prepared_url, prepared_data = self._prepare_request_params(url=url, data=message)
                 is_success = not await self._request(session, url=prepared_url, data=prepared_data, proxy=proxy)
-                if is_success or not remain_retry_attempt:
+                if is_success:
+                    break
+                if not remain_retry_attempt:
+                    logger.warning(f"재시도 요청을 {DEFAULT_RETRY_ATTEMPT}번 모두 시도했습니다.")
                     break
                 remain_retry_attempt -= 1
                 current_retry_attempt = DEFAULT_RETRY_ATTEMPT - remain_retry_attempt
