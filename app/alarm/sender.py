@@ -43,50 +43,31 @@ class AlarmService:
     async def _send(self, subscribers: list[str], message: bytes) -> list[str]:
         proxy = await self._alarm_repo.get_least_usage_proxy()
         async with aiohttp.ClientSession(headers=self._headers) as session:
-            alarms = [
-                self._request(session, url=f"{DISCORD_WEBHOOK_URL}{key}", data=message, proxy=proxy)
-                for key in subscribers
-            ]
+            alarms = []
+            for key in subscribers:
+                url = f"{DISCORD_WEBHOOK_URL}{key}"
+                prepared_url, prepared_data = self._prepare_request_params(url, message)
+                alarms.append(self._request(session, url=prepared_url, data=prepared_data, proxy=proxy))
+
             responses = await asyncio.gather(*alarms)
             return [response for response in responses if response]
 
-    async def _request(self, session: ClientSession, url: str, data: bytes | str, proxy: str | None) -> str | None:
-        # 웹훅 ID 추출
+    def _prepare_request_params(self, url: str, data: bytes) -> tuple[str, bytes]:
+        data_str = data.decode("utf-8")
         webhook_id = url.replace(DISCORD_WEBHOOK_URL, "")
 
-        # 조용히 {{hook_hash}} 처리 - 테스트 방해 방지
-        try:
-            # 데이터 타입에 따른 처리
-            if isinstance(data, bytes):
-                try:
-                    data_str = data.decode("utf-8")
-                    if "{{hook_hash}}" in data_str:
-                        hashed_webhook = hashlib.sha256(webhook_id.encode()).hexdigest()
-                        data_str = data_str.replace("{{hook_hash}}", hashed_webhook)
-                        data = data_str.encode("utf-8")
-                except UnicodeDecodeError:
-                    # 바이너리 데이터는 그대로 사용
-                    pass
-            elif isinstance(data, str) and "{{hook_hash}}" in data:
-                # 문자열 데이터 처리
-                hashed_webhook = hashlib.sha256(webhook_id.encode()).hexdigest()
-                data = data.replace("{{hook_hash}}", hashed_webhook)
-        except:
-            # 처리 중 오류 발생 시 원본 데이터 사용 (로그 출력 없음)
-            pass
+        if "{{hook_hash}}" in data_str:
+            hashed_webhook = hashlib.sha256(webhook_id.encode()).hexdigest()
+            data_str = data_str.replace("{{hook_hash}}", hashed_webhook)
+            data = data_str.encode("utf-8")
 
-        # 메시지 본문에 "32768"이 있으면 URL에 "?with_components=true" 추가
-        try:
-            if isinstance(data, bytes):
-                if b"32768" in data:
-                    url += "?with_components=true"
-            elif isinstance(data, str):
-                if "32768" in data:
-                    url += "?with_components=true"
-        except:
-            # 오류 발생 시 URL 변경 없이 진행 (로그 출력 없음)
-            pass
+        # Discrod Components V2 대응
+        if "32768" in data_str:
+            url += "?with_components=true"
 
+        return url, data
+
+    async def _request(self, session: ClientSession, url: str, data: bytes, proxy: str | None) -> str | None:
         proxy_auth = BasicAuth(settings.PROXY_USER, settings.PROXY_PASSWORD) if proxy else None
         try:
             response: ClientResponse = await session.post(url=url, data=data, proxy=proxy, proxy_auth=proxy_auth)
@@ -114,7 +95,8 @@ class AlarmService:
         remain_retry_attempt = DEFAULT_RETRY_ATTEMPT
         async with aiohttp.ClientSession(headers=self._headers) as session:
             while True:
-                is_success = not await self._request(session, url=url, data=message, proxy=proxy)
+                prepared_url, prepared_data = self._prepare_request_params(url=url, data=message)
+                is_success = not await self._request(session, url=prepared_url, data=prepared_data, proxy=proxy)
                 if is_success or not remain_retry_attempt:
                     break
                 remain_retry_attempt -= 1
