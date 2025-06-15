@@ -31,7 +31,7 @@ async def test_retry_attempt(mocker: MockerFixture, alarm_service: AlarmService)
     mocker.patch.object(alarm_service, "_request", return_value="failed_url")
     sleep_patcher = mocker.patch.object(asyncio, "sleep", new_callable=AsyncMock)
     # when
-    await alarm_service._retry(url="", message="", proxy="")
+    await alarm_service._retry(url="", message="".encode(), proxy="")
     # then
     assert sleep_patcher.await_count == DEFAULT_RETRY_ATTEMPT
 
@@ -142,7 +142,7 @@ async def test_private_send_if_failed_return_url(mocker: MockerFixture, alarm_se
     failed_subscribers = ["subscriber" for _ in range(failed_subscriber_count)]
     mocker.patch.object(alarm_service, "_request", return_value="url")
     # when
-    responses = await alarm_service._send(subscribers=failed_subscribers, message="")
+    responses = await alarm_service._send(subscribers=failed_subscribers, message="".encode())
     # then
     assert len(responses) == failed_subscriber_count
     assert isinstance(responses[0], str)
@@ -154,7 +154,7 @@ async def test_private_send_if_success_return_none(mocker: MockerFixture, alarm_
     subscribers = ["subscriber" for _ in range(10)]
     mocker.patch.object(alarm_service, "_request", return_value=None)
     # when
-    responses = await alarm_service._send(subscribers=subscribers, message="")
+    responses = await alarm_service._send(subscribers=subscribers, message="".encode())
     # then
     assert len(responses) == 0
 
@@ -167,7 +167,7 @@ async def test_send_if_failed_return_task(mocker: MockerFixture, alarm_service: 
     mocker.patch.object(alarm_service, "_request", return_value="url")
     mocker.patch.object(alarm_service, "_retry", new_callable=AsyncMock)
     # when
-    failed_alarms = await alarm_service.send(subscribers=failed_subscribers, message="")
+    failed_alarms = await alarm_service.send(subscribers=failed_subscribers, message="".encode())
     # then
     assert len(failed_alarms) == failed_subscriber_count
     assert isinstance(failed_alarms[0], Coroutine)
@@ -182,6 +182,6 @@ async def test_send_if_success_return_none(mocker: MockerFixture, alarm_service:
     subscribers = ["subscriber" for _ in range(10)]
     mocker.patch.object(alarm_service, "_request", return_value=None)
     # when
-    failed_alarms = await alarm_service.send(subscribers=subscribers, message="")
+    failed_alarms = await alarm_service.send(subscribers=subscribers, message="".encode())
     # then
     assert len(failed_alarms) == 0
